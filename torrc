@@ -1,0 +1,36 @@
+# from https://github.com/antitree/private-tor-network/blob/master/config/torrc
+TestingTorNetwork 1
+
+DataDirectory /etc/tor
+
+## Rapid Bootstrap Testing Options ##
+# These typically launch a working minimal Tor network in 6s-10s
+# These parameters make tor networks bootstrap fast,
+# but can cause consensus instability and network unreliability
+# (Some are also bad for security.)
+AssumeReachable 1
+PathsNeededToBuildCircuits 0.25
+TestingDirAuthVoteExit *
+TestingDirAuthVoteHSDir *
+V3AuthNIntervalsValid 2
+
+## Always On Testing Options ##
+# We enable TestingDirAuthVoteGuard to avoid Guard stability requirements
+TestingDirAuthVoteGuard *
+# We set TestingMinExitFlagThreshold to 0 to avoid Exit bandwidth requirements
+TestingMinExitFlagThreshold 0
+# VoteOnHidServDirectoriesV2 needs to be set for HSDirs to get the HSDir flag
+#Default VoteOnHidServDirectoriesV2 1
+
+# Private tor network configuration
+RunAsDaemon 0
+ConnLimit 60
+ShutdownWaitLength 0
+Log info stdout
+ProtocolWarnings 1
+SafeLogging 0
+DisableDebuggerAttachment 0
+
+Orport 5000
+Dirport 7000
+ExitPolicy accept *:*
