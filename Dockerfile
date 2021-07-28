@@ -25,6 +25,13 @@ RUN ./configure --disable-asciidoc
 RUN make -j20
 RUN make install
 
+RUN apk add python3 py3-pip
+ADD bwtool/bwtool.py /bwtool/
+ADD bwtool/requirements.txt /bwtool
+WORKDIR /bwtool
+RUN pip install -r requirements.txt
+RUN cp bwtool.py /usr/local/bin/
+
 COPY scripts/entrypoint.sh /usr/local/bin/
 
 WORKDIR /usr/local/etc/tor

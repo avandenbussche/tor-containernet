@@ -1,2 +1,4 @@
 .idea
 nodes
+*.bin
+*.json
