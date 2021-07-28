@@ -34,7 +34,7 @@ for i in $(seq $DA_NODES); do
     -i "$KEYPATH"/authority_identity_key \
     -s "$KEYPATH"/authority_signing_key \
     -c "$KEYPATH"/authority_certificate
-  tor --list-fingerprint --datadirectory "$NODE_DIR" --orport 1 --dirserver "x 127.0.0.1:1 ffffffffffffffffffffffffffffffffffffffff"
+  echo | tor -f - --list-fingerprint --datadirectory "$NODE_DIR" --orport 1 --dirserver "x 127.0.0.1:1 ffffffffffffffffffffffffffffffffffffffff"
   cat torrc.da >> "$NODE_DIR"/torrc
   scripts/da_fingerprint.sh "$NODE_DIR" >>nodes/da
 done

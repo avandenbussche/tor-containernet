@@ -31,7 +31,7 @@ info('*** Adding controller\n')
 net.addController('c0')
 
 info('*** Adding docker containers using tor images\n')
-docker_nodes = [net.addDocker(node.nickname, ip=node.ip, dimage="tor", volumes=[f"{node.path}:/etc/tor"]) for node in nodes]
+docker_nodes = [net.addDocker(node.nickname, ip=node.ip, dimage="tor", volumes=[f"{node.path}:/usr/local/etc/tor"]) for node in nodes]
 
 info('*** Adding switch\n')
 switch = net.addSwitch(f's0')
@@ -39,7 +39,7 @@ switch = net.addSwitch(f's0')
 # Connect nodes to their switches
 info(f'*** Adding links between nodes and the switch\n')
 for node in docker_nodes:
-    net.addLink(node, switch, cls=TCLink, delay='100ms', bw=1)
+    net.addLink(node, switch, cls=TCLink, delay='10ms', bw=1000)
 
 info('*** Starting network\n')
 net.start()
