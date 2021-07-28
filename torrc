@@ -31,8 +31,6 @@ ProtocolWarnings 1
 SafeLogging 0
 DisableDebuggerAttachment 0
 
-Orport 5000
+ORPort 5000
 Dirport 7000
 ExitPolicy accept *:*
-
-QUIC 1

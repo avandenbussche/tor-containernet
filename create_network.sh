@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e
 
+if [[ $# != 1 ]] || { [[ "$1" != quic ]] && [[ "$1" != vanilla ]]; }
+then
+    echo "usage: ./create-network.sh (quic|vanilla)"
+    exit 1;
+fi
+
+FLAVOR="$1"
 DIR_PORT=$(grep Dirport torrc | awk '{print $2}')
 DA_NODES=3
 RELAY_NODES=3
@@ -17,6 +24,10 @@ function create_node {
   echo "Creating $NAME"
   mkdir "$NODE_DIR"
   cp torrc "$NODE_DIR/"
+  if [[ "$FLAVOR" == "quic" ]]
+  then
+      echo "QUIC 1" >> "$NODE_DIR/torrc"
+  fi
   echo "Nickname $NAME" >>"$NODE_DIR/torrc"
   IP_NUMBER=$((IP_NUMBER + 1))
   IP="${IP_TEMPLATE}${IP_NUMBER}"
