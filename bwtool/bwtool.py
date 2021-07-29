@@ -54,11 +54,16 @@ class BwTool:
         } if self.proxy else None
         response = requests.get(f'http://{self.address}:{self.port}/file.bin', proxies=proxies, stream=True)
         print(f"Received response, status={response.status_code}")
-        metadata['ttfb'] = time.time() - start
+        now = time.time()
+        metadata['ttfb'] = now - start
         chunks = self.data.setdefault('chunks', [])
+        chunks.append({
+            'size': 0,
+            'time': now - start
+        })
         total = 0
         last_print = time.time()
-        for chunk in response.iter_content(100_000):
+        for chunk in response.iter_content(10_000):
             now = time.time()
             total += len(chunk)
             if now - last_print > 0.1:
