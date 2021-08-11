@@ -5,16 +5,21 @@ import json
 import os.path
 import subprocess
 import time
+from socket import socket
 from subprocess import Popen
 from typing import Optional
+from urllib.parse import urlparse
 
-import requests
+from python_socks.sync import Proxy
+
+CHUNK_SIZE = 128
 
 
 class BwTool:
-    def __init__(self, address: str, port: int, size: int, proxy: str):
+    def __init__(self, address: str, port: int, proxy_address: str, proxy_port: int, size: int):
+        self.proxy_port = proxy_port
+        self.proxy_address = proxy_address
         self.address = address
-        self.proxy = proxy
         self.port = port
         self.size = size
         self.server_process = None  # type: Optional[Popen]
@@ -24,6 +29,7 @@ class BwTool:
         try:
             self._create_file()
             self.start_server()
+            self.init_data()
             self.do_request()
             self.save_data()
         finally:
@@ -41,41 +47,69 @@ class BwTool:
         time.sleep(1)
 
     def do_request(self):
-        metadata = self.data.setdefault('metadata', {})
-        metadata['size_kb'] = self.size
-        metadata['address'] = self.address
-        metadata['proxy'] = self.proxy
-        metadata['port'] = self.port
+        print(f"Downloading {self.size}KiB"
+              f" from http://{self.address}:{self.port}"
+              f" over socks5://{self.proxy_address}:{self.proxy_port}")
+        metadata = self.data['metadata']
+        chunks = self.data['chunks']
+
         start = time.time()
         metadata['start'] = start
-        proxies = {
-            'http': f'socks5://{self.proxy}',
-            'htts': f'socks5://{self.proxy}',
-        } if self.proxy else None
-        response = requests.get(f'http://{self.address}:{self.port}/file.bin', proxies=proxies, stream=True)
-        print(f"Received response, status={response.status_code}")
-        now = time.time()
-        metadata['ttfb'] = now - start
-        chunks = self.data.setdefault('chunks', [])
+        sock = self.connect()
+
+        sock.recv(1)
+        ttfb = time.time() - start
+        metadata['ttfb'] = ttfb
         chunks.append({
-            'size': 0,
-            'time': now - start
+            'size': 1,
+            'time': ttfb
         })
-        total = 0
+        total = 1
         last_print = time.time()
-        for chunk in response.iter_content(10_000):
+        while True:
+            data = sock.recv(CHUNK_SIZE)
+            if not data:
+                break
             now = time.time()
-            total += len(chunk)
-            if now - last_print > 0.1:
-                last_print = now
-                print(f'\r{total // 1000:>10}/{self.size}kB', end='', flush=True)
+            total += len(data)
             chunks.append({
                 'size': total,
                 'time': now - start
             })
+
+            if now - last_print > 1:
+                last_print = now
+                previous_chunk = chunks[-2]
+                total_diff = total - previous_chunk['size']
+                time_diff = (now - start) - previous_chunk['time']
+                speed = total_diff / time_diff
+                print(f'\r{total // 1000:>10}/{self.size}kB {speed:.0f}kB/s', ' ' * 4, end='', flush=True)
         print()
         metadata['ttlb'] = time.time() - start
         metadata['end'] = time.time()
+
+    def init_data(self):
+        metadata = self.data.setdefault('metadata', {})
+        metadata['size_kb'] = self.size
+        metadata['proxy_port'] = self.proxy_port
+        metadata['proxy_address'] = self.proxy_address
+        metadata['address'] = self.address
+        metadata['port'] = self.port
+        self.data['chunks'] = [{
+            'time': 0,
+            'size': 0
+        }]
+
+    def connect(self) -> socket:
+        proxy = Proxy.from_url(f'socks5://{self.proxy_address}:{self.proxy_port}')
+        sock = proxy.connect(dest_host=self.address, dest_port=self.port)
+        request = (
+            'GET /file.bin HTTP/1.1\r\n'
+            f'Host: {self.address}\r\n'
+            'Connection: close\r\n\r\n'
+        ).encode()
+        sock.sendall(request)
+        return sock
 
     def save_data(self):
         name = f'bwtool_{self.size}kb_{int(time.time())}.json'
@@ -86,11 +120,13 @@ class BwTool:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-a', '--address', type=str, default='0.0.0.0', help='IP address to download from')
-    parser.add_argument('-p', '--port', type=int, default=8000)
+    parser.add_argument('proxy', type=str, help='address:port of the SOCKS proxy to use')
+    parser.add_argument('address', type=str, help='Target address:port combination')
     parser.add_argument('-s', '--size', type=int, help='Size in kB', default=1000)
-    parser.add_argument('-x', '--proxy', type=str, help='host:port combination for the SOCKS proxy to be used (e.g. "10.0.0.7:8000")')
     args = parser.parse_args()
+    proxy = urlparse(f'//{args.proxy}')
+    address = urlparse(f'//{args.address}')
+    size = args.size
 
-    bwtool = BwTool(args.address, args.port, args.size, args.proxy)
+    bwtool = BwTool(address.hostname, address.port or 80, proxy.hostname, proxy.port or 8000, size)
     bwtool.run()

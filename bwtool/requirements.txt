@@ -1,1 +1,1 @@
-requests[socks]
+python-socks
