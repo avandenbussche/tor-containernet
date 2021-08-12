@@ -55,7 +55,9 @@ class BwTool:
 
         start = time.time()
         metadata['start'] = start
+
         sock = self.connect()
+        metadata['connected'] = time.time() - start
 
         sock.recv(1)
         ttfb = time.time() - start
@@ -66,24 +68,27 @@ class BwTool:
         })
         total = 1
         last_print = time.time()
+        last_chunk = chunks[0]
         while True:
             data = sock.recv(CHUNK_SIZE)
             if not data:
                 break
             now = time.time()
             total += len(data)
-            chunks.append({
+            chunk = {
                 'size': total,
                 'time': now - start
-            })
+            }
+            chunks.append(chunk)
 
             if now - last_print > 1:
-                last_print = now
                 previous_chunk = chunks[-2]
-                total_diff = total - previous_chunk['size']
-                time_diff = (now - start) - previous_chunk['time']
-                speed = total_diff / time_diff
-                print(f'\r{total // 1000:>10}/{self.size}kB {speed:.0f}kB/s', ' ' * 4, end='', flush=True)
+                total_diff = chunk['size'] - last_chunk['size']
+                time_diff = chunk['time'] - last_chunk['time']
+                speed = (total_diff / time_diff) // 1000
+                print(f'\r{total // 1000:>10}/{self.size}kB {speed}kB/s', ' ' * 4, end='', flush=True)
+                last_print = now
+                last_chunk = chunk
         print()
         metadata['ttlb'] = time.time() - start
         metadata['end'] = time.time()
