@@ -3,3 +3,4 @@ nodes
 *.bin
 *.json
 venv
+*.egg-info

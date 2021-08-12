@@ -12,16 +12,17 @@ from urllib.parse import urlparse
 
 from python_socks.sync import Proxy
 
-CHUNK_SIZE = 128
-
 
 class BwTool:
-    def __init__(self, address: str, port: int, proxy_address: str, proxy_port: int, size: int):
+    def __init__(self, address: str, port: int, proxy_address: str, proxy_port: int, size: int, chunk_size: int,
+                 print_interval: float):
+        self.print_interval = print_interval
         self.proxy_port = proxy_port
         self.proxy_address = proxy_address
         self.address = address
         self.port = port
         self.size = size
+        self.chunk_size = chunk_size
         self.server_process = None  # type: Optional[Popen]
         self.data = {}
 
@@ -47,7 +48,7 @@ class BwTool:
         time.sleep(1)
 
     def do_request(self):
-        print(f"Downloading {self.size}KiB"
+        print(f"Downloading {self.size}kB"
               f" from http://{self.address}:{self.port}"
               f" over socks5://{self.proxy_address}:{self.proxy_port}")
         metadata = self.data['metadata']
@@ -70,7 +71,7 @@ class BwTool:
         last_print = time.time()
         last_chunk = chunks[0]
         while True:
-            data = sock.recv(CHUNK_SIZE)
+            data = sock.recv(self.chunk_size)
             if not data:
                 break
             now = time.time()
@@ -81,8 +82,7 @@ class BwTool:
             }
             chunks.append(chunk)
 
-            if now - last_print > 1:
-                previous_chunk = chunks[-2]
+            if now - last_print > self.print_interval:
                 total_diff = chunk['size'] - last_chunk['size']
                 time_diff = chunk['time'] - last_chunk['time']
                 speed = (total_diff / time_diff) // 1000
@@ -128,10 +128,13 @@ if __name__ == '__main__':
     parser.add_argument('proxy', type=str, help='address:port of the SOCKS proxy to use')
     parser.add_argument('address', type=str, help='Target address:port combination')
     parser.add_argument('-s', '--size', type=int, help='Size in kB', default=1000)
+    parser.add_argument('-c', '--chunk-size', type=int, help='Chunk size in B', default=1024)
+    parser.add_argument('-p', '--print-interval', type=float, help='Print interval in seconds', default=1)
     args = parser.parse_args()
     proxy = urlparse(f'//{args.proxy}')
     address = urlparse(f'//{args.address}')
     size = args.size
 
-    bwtool = BwTool(address.hostname, address.port or 80, proxy.hostname, proxy.port or 8000, size)
+    bwtool = BwTool(address.hostname, address.port or 80, proxy.hostname, proxy.port or 8000, size, args.chunk_size,
+                    args.print_interval)
     bwtool.run()
