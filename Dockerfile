@@ -1,23 +1,28 @@
-FROM alpine:3.13.0
+FROM ubuntu:20.04
 
-RUN apk add --no-cache \
-	curl \
-	bash \
-	iproute2 \
-	build-base \
-	automake \
-	autoconf \
-	libevent-dev \
-	openssl-dev \
-	zlib-dev \
-	cmake \
-        cargo
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        curl \
+        build-essential \
+        automake \
+        cmake \
+        libssl-dev \
+        libevent-dev \
+        libz-dev \
+        python3 \
+        python3-pip \
+        iputils-ping \
+        net-tools \
+        iproute2 \
+        bash \
+        && rm -rf /var/lib/apt/lists/*
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup.sh && chmod +x rustup.sh && ./rustup.sh -y  && ~/.cargo/bin/rustup install 1.54
 
 ADD tor tor
 
 WORKDIR /tor/src/lib/quiche
-RUN cargo build --release
+RUN ~/.cargo/bin/cargo build --release --features ffi
 RUN cp target/release/libquiche.so /usr/local/lib/
+RUN ldconfig
 
 WORKDIR /tor
 RUN ./autogen.sh
@@ -25,11 +30,10 @@ RUN ./configure --disable-asciidoc
 RUN make -j20
 RUN make install
 
-RUN apk add python3 py3-pip
 ADD bwtool/bwtool.py /bwtool/
-ADD bwtool/requirements.txt /bwtool
+ADD bwtool/requirements.txt /bwtool/
 WORKDIR /bwtool
-RUN pip install -r requirements.txt
+RUN pip3 install -r requirements.txt
 RUN cp bwtool.py /usr/local/bin/
 
 COPY scripts/entrypoint.sh /usr/local/bin/
