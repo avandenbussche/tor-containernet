@@ -39,7 +39,7 @@ switch = net.addSwitch(f's0')
 # Connect nodes to their switches
 info(f'*** Adding links between nodes and the switch\n')
 for node in docker_nodes:
-    net.addLink(node, switch, cls=TCLink)
+    net.addLink(node, switch, cls=TCLink, delay='25ms', bw=20)
 
 info('*** Starting network\n')
 net.start()
