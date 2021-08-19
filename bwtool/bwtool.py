@@ -15,7 +15,7 @@ from python_socks.sync import Proxy
 
 class BwTool:
     def __init__(self, address: str, port: int, proxy_address: str, proxy_port: int, size: int, chunk_size: int,
-                 print_interval: float):
+                 print_interval: float, name: str):
         self.print_interval = print_interval
         self.proxy_port = proxy_port
         self.proxy_address = proxy_address
@@ -23,6 +23,7 @@ class BwTool:
         self.port = port
         self.size = size
         self.chunk_size = chunk_size
+        self.name = name
         self.server_process = None  # type: Optional[Popen]
         self.data = {}
 
@@ -100,6 +101,7 @@ class BwTool:
         metadata['proxy_address'] = self.proxy_address
         metadata['address'] = self.address
         metadata['port'] = self.port
+        metadata['name'] = self.name
         self.data['chunks'] = [{
             'time': 0,
             'size': 0
@@ -117,10 +119,12 @@ class BwTool:
         return sock
 
     def save_data(self):
-        name = f'bwtool_{self.size}kb_{int(time.time())}.json'
-        with open(name, 'w') as out_file:
+        filename = f'bwtool_{self.size}kb_{int(time.time())}.json'
+        if self.name:
+            filename = f'{self.name}_{filename}'
+        with open(filename, 'w') as out_file:
             json.dump(self.data, out_file)
-        print(f"Saved data to {os.path.abspath(name)}")
+        print(f"Saved data to {os.path.abspath(filename)}")
 
 
 if __name__ == '__main__':
@@ -130,11 +134,12 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--size', type=int, help='Size in kB', default=1000)
     parser.add_argument('-c', '--chunk-size', type=int, help='Chunk size in B', default=1024)
     parser.add_argument('-p', '--print-interval', type=float, help='Print interval in seconds', default=1)
+    parser.add_argument('-n', '--name', type=str, help='Name to prepend to the filename')
     args = parser.parse_args()
     proxy = urlparse(f'//{args.proxy}')
     address = urlparse(f'//{args.address}')
     size = args.size
 
-    bwtool = BwTool(address.hostname, address.port or 80, proxy.hostname, proxy.port or 8000, size, args.chunk_size,
-                    args.print_interval)
+    bwtool = BwTool(address=address.hostname, port=address.port or 80, proxy_address=proxy.hostname, proxy_port=proxy.port or 8000,
+                    size=size, chunk_size=args.chunk_size, print_interval=args.print_interval, name=args.name)
     bwtool.run()
