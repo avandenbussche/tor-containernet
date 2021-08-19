@@ -3,10 +3,10 @@
 build:
 	sudo docker build -t tor .
 
-quic: build
+quic:
 	./create_network.sh quic
 
-vanilla: build
+vanilla:
 	./create_network.sh vanilla
 
 run:
