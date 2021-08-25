@@ -24,10 +24,18 @@ plt.rcParams["font.family"] = "Latin Modern Roman"
 
 
 def format_y(y: int, pos=None):
-    return f'{y // 1000:.0f}'
+    return f'{y // 1024:.0f}'
 
 
 class Plotter:
+    def plot(self):
+        raise NotImplementedError
+
+    def save(self, out_file: str):
+        plt.savefig(out_file)
+
+
+class BwPlotter(Plotter):
     def __init__(self, title: str):
         self.title = title
         self.data = []
@@ -41,20 +49,19 @@ class Plotter:
         plt.grid(True)
 
         x_max = max(item['metadata']['ttlb'] for item in self.data)
-        y_max = max(item['metadata']['size_kb'] * 1000 for item in self.data)
+        y_max = max(item['metadata']['size_kib'] * 1024 for item in self.data)
         lines = []
         for idx, data in enumerate(self.data):
             line, label = self.add_subplot(data, x_max, y_max, idx)
             lines.append((line, label))
 
-        print([i[1] for i in lines])
         plt.legend([i[0] for i in lines], [i[1] for i in lines], framealpha=1, fancybox=False, edgecolor='white', loc='upper left')
         plt.subplots_adjust(left=0.1, right=0.85)
         ax = plt.gca()
         ax.yaxis.set_major_formatter(FuncFormatter(format_y))
 
     def add_subplot(self, data: dict, x_max: float, y_max: float, idx: int):
-        color = COLORS[idx]
+        color = COLORS[idx % len(COLORS)]
         metadata = data['metadata']
         self.add_vline(metadata['ttfb'], color)
         text_height = y_max + (idx + 1) * (y_max / 20)
@@ -75,8 +82,52 @@ class Plotter:
     def add_vline(self, x: float, color: str):
         plt.axvline(x, color=color, linestyle='-.', linewidth=1)
 
-    def save(self, out_file: str):
-        plt.savefig(out_file)
+
+class AggregatePlotter(Plotter):
+    field_to_name = {
+        'ttlb': 'Time to Last Byte',
+        'ttfb': 'Time to First Byte',
+    }
+
+    def dir_to_name(self, dirname: str):
+        out = dirname.lstrip('./')
+        out = out.replace('quic', 'QUIC')
+        return out
+
+    def __init__(self, title: str, field: str):
+        self.title = title
+        self.data = {}
+        self.field = field
+        self.name = self.field_to_name.get(field, field)
+
+    def add_dir(self, dirname):
+        files = find_in_dir(dirname)
+        print("Adding", dirname)
+        self.data[dirname] = [read(f) for f in files]
+
+    def plot(self):
+        plt.ylabel('Cumulative fraction')
+        plt.xlabel(f'{self.name} (s)')
+        plt.grid(True)
+
+        lines = []
+        for idx, name in enumerate(self.data):
+            line, label = self.add_subplot(name, idx)
+            lines.append((line, label))
+        plt.legend([i[0] for i in lines], [i[1] for i in lines], framealpha=1, fancybox=False, edgecolor='white', loc='lower right')
+        ax = plt.gca()
+        ax.set_ylim(ymin=0)
+        ax.set_xlim(xmin=0)
+
+    def add_subplot(self, name: str, idx: int):
+        color = COLORS[idx % len(COLORS)]
+        objs = self.data[name]
+        x_values = [data['metadata'][self.field] for data in objs]
+        y = [i / len(objs) for i in range(len(objs))]
+        label = self.dir_to_name(name)
+        line, = plt.plot(sorted(x_values), y, color=color, label=label)
+        return line, label
+
 
 
 def read(filename: str):
@@ -85,31 +136,41 @@ def read(filename: str):
     return data
 
 
+def find_in_dir(dirname: str):
+    dir_files = os.listdir(dirname)
+    return sorted([os.path.join(dirname, f) for f in dir_files if re.fullmatch(r'.*bwtool.*\.json', f)])
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('file', help="File or directory to load from")
     parser.add_argument('-t', '--title', help="Title of the figure")
     parser.add_argument('-o', '--out-file', help="Output file")
     parser.add_argument('-s', '--show', default=False, help="Open output with xdg-open", action='store_true')
+    parser.add_argument('-a', '--aggregate', type=str, help="Create an aggregate plot of given parameter instead")
     args = parser.parse_args()
 
+    aggregate = args.aggregate
     if not os.path.exists(args.file):
         raise RuntimeError(f"{args.file} does not exist")
-    files = []
-    if os.path.isdir(args.file):
-        dir = args.file
-        dir_files = os.listdir(dir)
-        for file in dir_files:
-            if not re.fullmatch(r'.*bwtool.*\.json', file):
-                continue
-            path = os.path.join(dir, file)
-            files.append(path)
-    else:
-        files.append(args.file)
 
-    plotter = Plotter(args.title)
-    for file in files:
-        plotter.add_data(file)
+    if aggregate:
+        plotter = AggregatePlotter(args.title, aggregate)
+        files = os.listdir(args.file)
+        for f in files:
+            path = os.path.join(args.file, f)
+            if os.path.isdir(path):
+                plotter.add_dir(path)
+    else:
+        files = []
+        if os.path.isdir(args.file):
+            files += find_in_dir(args.file)
+        else:
+            files.append(args.file)
+        plotter = BwPlotter(args.title)
+        for file in files:
+            plotter.add_data(file)
+
     plotter.plot()
     out_file = args.out_file or '/tmp/bwplotter.svg'
     plotter.save(out_file)

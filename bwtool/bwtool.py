@@ -41,7 +41,7 @@ class BwTool:
 
     def _create_file(self):
         with open('file.bin', 'wb') as out_file:
-            contents = b'0' * 1000 * self.size
+            contents = b'0' * 1024 * self.size
             out_file.write(contents)
 
     def start_server(self):
@@ -86,8 +86,8 @@ class BwTool:
             if now - last_print > self.print_interval:
                 total_diff = chunk['size'] - last_chunk['size']
                 time_diff = chunk['time'] - last_chunk['time']
-                speed = (total_diff / time_diff) // 1000
-                print(f'\r{total // 1000:>10}/{self.size}kB {speed}kB/s', ' ' * 4, end='', flush=True)
+                speed = (total_diff / time_diff) // 1024
+                print(f'\r{total // 1024:>10}/{self.size}kB {speed}kB/s', ' ' * 4, end='', flush=True)
                 last_print = now
                 last_chunk = chunk
         print()
@@ -96,7 +96,7 @@ class BwTool:
 
     def init_data(self):
         metadata = self.data.setdefault('metadata', {})
-        metadata['size_kb'] = self.size
+        metadata['size_kib'] = self.size
         metadata['proxy_port'] = self.proxy_port
         metadata['proxy_address'] = self.proxy_address
         metadata['address'] = self.address
@@ -119,7 +119,7 @@ class BwTool:
         return sock
 
     def save_data(self):
-        filename = f'bwtool_{self.size}kb_{int(time.time())}.json'
+        filename = f'bwtool_{self.size}kib_{int(time.time())}.json'
         if self.name:
             filename = f'{self.name}_{filename}'
         with open(filename, 'w') as out_file:
@@ -131,8 +131,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('proxy', type=str, help='address:port of the SOCKS proxy to use')
     parser.add_argument('address', type=str, help='Target address:port combination')
-    parser.add_argument('-s', '--size', type=int, help='Size in kB', default=1000)
-    parser.add_argument('-c', '--chunk-size', type=int, help='Chunk size in B', default=1024)
+    parser.add_argument('-s', '--size', type=int, help='Size in KiB', default=1024)
+    parser.add_argument('-c', '--chunk-size', type=int, help='Chunk size in bytes', default=1024)
     parser.add_argument('-p', '--print-interval', type=float, help='Print interval in seconds', default=1)
     parser.add_argument('-n', '--name', type=str, help='Name to prepend to the filename')
     args = parser.parse_args()

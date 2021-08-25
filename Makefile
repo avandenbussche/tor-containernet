@@ -13,5 +13,5 @@ run:
 	sudo python3 tor_runner.py
 
 cleanup:
-	sudo docker rm -f $(sudo docker ps --filter 'name=mn.' -a -q) || echo "No conainers to clean up"
+	sudo docker rm -f $(sudo docker ps --filter 'name=mn.' -a -q) 2> /dev/null || echo "No containers to clean up"
 	sudo mn -c
