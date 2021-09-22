@@ -16,7 +16,7 @@ setLogLevel('info')
 TorNode = namedtuple('TorNode', ['ip', 'path', 'nickname'])
 
 
-def run(delay_ms: float, bandwidth: float, loss: float, docker_image='tor'):
+def run(delay_ms: float, bandwidth: float, loss: float, jitter: float, docker_image='tor'):
     info('*** Reading node data\n')
     nodes = []
     da_node_dirs = glob.glob('nodes/a*') + glob.glob('nodes/r*') + glob.glob('nodes/c*')
@@ -44,7 +44,7 @@ def run(delay_ms: float, bandwidth: float, loss: float, docker_image='tor'):
     info(f'*** Adding links between nodes and the switch\n')
     delay_str = str(delay_ms) + 'ms'
     for node in docker_nodes:
-        net.addLink(node, switch, cls=TCLink, delay=delay_str, bw=bandwidth, loss=loss)
+        net.addLink(node, switch, cls=TCLink, delay=delay_str, bw=bandwidth, loss=loss, jitter=jitter)
 
     info('*** Starting network\n')
     net.start()
@@ -64,6 +64,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--delay', help='Link latency in ms', type=float, default=25)
     parser.add_argument('-l', '--loss', help='Packet loss in percentage', type=float, default=0.1)
     parser.add_argument('-b', '--bandwidth', help='Link bandwidth in Mbit/s', type=float, default=20)
+    parser.add_argument('-j', '--jitter', help='Link bandwidth in ms', type=float, default=0)
     parser.add_argument('-i', '--image', help='Tor Docker image name', type=str, default='tor')
     args = parser.parse_args()
-    run(delay_ms=args.delay, bandwidth=args.bandwidth, loss=args.loss, docker_image=args.image)
+    run(delay_ms=args.delay, bandwidth=args.bandwidth, loss=args.loss, jitter=args.jitter, docker_image=args.image)
