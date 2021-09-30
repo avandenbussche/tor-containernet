@@ -9,5 +9,5 @@ setuptools.setup(
     install_requires=[
         'python_socks'
     ],
-    scripts=['bwtool.py', 'bwplotter.py']
+    scripts=['bwtool.py', 'bwplotter.py', 'bwtables.py']
 )

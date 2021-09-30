@@ -4,3 +4,4 @@ nodes
 *.json
 venv
 *.egg-info
+__pycache__

@@ -36,9 +36,10 @@ class Plotter:
 
 
 class BwPlotter(Plotter):
-    def __init__(self, title: str):
+    def __init__(self, title: str, legend_loc='upper left'):
         self.title = title
         self.data = []
+        self.legend_loc = legend_loc
 
     def add_data(self, filename: str):
         self.data.append(read(filename))
@@ -55,7 +56,7 @@ class BwPlotter(Plotter):
             line, label = self.add_subplot(data, x_max, y_max, idx)
             lines.append((line, label))
 
-        plt.legend([i[0] for i in lines], [i[1] for i in lines], framealpha=1, fancybox=False, edgecolor='white', loc='upper left')
+        plt.legend([i[0] for i in lines], [i[1] for i in lines], framealpha=1, fancybox=False, edgecolor='white', loc=self.legend_loc)
         plt.subplots_adjust(left=0.1, right=0.85)
         ax = plt.gca()
         ax.yaxis.set_major_formatter(FuncFormatter(format_y))
@@ -94,11 +95,12 @@ class AggregatePlotter(Plotter):
         out = out.replace('quic', 'QUIC')
         return out
 
-    def __init__(self, title: str, field: str):
+    def __init__(self, title: str, field: str, legend_loc='lower right'):
         self.title = title
         self.data = {}
         self.field = field
         self.name = self.field_to_name.get(field, field)
+        self.legend_loc = legend_loc
 
     def add_dir(self, dirname):
         files = find_in_dir(dirname)
@@ -114,7 +116,7 @@ class AggregatePlotter(Plotter):
         for idx, name in enumerate(self.data):
             line, label = self.add_subplot(name, idx)
             lines.append((line, label))
-        plt.legend([i[0] for i in lines], [i[1] for i in lines], framealpha=1, fancybox=False, edgecolor='white', loc='lower right')
+        plt.legend([i[0] for i in lines], [i[1] for i in lines], framealpha=1, fancybox=False, edgecolor='white', loc=self.legend_loc)
         ax = plt.gca()
         ax.set_ylim(ymin=0)
         ax.set_xlim(xmin=0)
@@ -127,7 +129,6 @@ class AggregatePlotter(Plotter):
         label = self.dir_to_name(name)
         line, = plt.plot(sorted(x_values), y, color=color, label=label)
         return line, label
-
 
 
 def read(filename: str):
@@ -148,6 +149,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--out-file', help="Output file")
     parser.add_argument('-s', '--show', default=False, help="Open output with xdg-open", action='store_true')
     parser.add_argument('-a', '--aggregate', type=str, help="Create an aggregate plot of given parameter instead")
+    parser.add_argument('--legend-loc', type=str, help="Location of the legend ('best', 'upper right', 'center', ...)", default='best')
     args = parser.parse_args()
 
     aggregate = args.aggregate
@@ -155,7 +157,7 @@ if __name__ == '__main__':
         raise RuntimeError(f"{args.file} does not exist")
 
     if aggregate:
-        plotter = AggregatePlotter(args.title, aggregate)
+        plotter = AggregatePlotter(args.title, aggregate, legend_loc=args.legend_loc)
         files = os.listdir(args.file)
         for f in files:
             path = os.path.join(args.file, f)
@@ -167,7 +169,7 @@ if __name__ == '__main__':
             files += find_in_dir(args.file)
         else:
             files.append(args.file)
-        plotter = BwPlotter(args.title)
+        plotter = BwPlotter(args.title, legend_loc=args.legend_loc)
         for file in files:
             plotter.add_data(file)
 
