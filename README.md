@@ -35,3 +35,4 @@ A private Tor network will start up, consensus is reached in about 30 seconds.
 - `bwplotter.py` creates graphs based on `bwtool.py` output files
 - `bwtables.py` creates a summary table based on `bwtool.py` output files
 - modify `create_network.sh` to change the amount of authority, relay and client nodes
+- To recover from a crash, use `make cleanup`
