@@ -21,9 +21,10 @@ connected to a switch trough a rate-limited link. Containernet is used to make D
 
 ## Usage
 
-1. Run `make build` to build the Tor Dockerfile
-2. Run `make quic` or `make vanilla` to populate the `nodes/` directory, enabling or disabling QUIC respectively
-3. Run `sudo ./tor_runner.py` to start Containernet
+1. Clone the repo with the `--recursive` flag
+2. Run `make build` to build `tor/` as Docker container named `tor`
+3. Run `make quic` or `make vanilla` to populate the `nodes/` directory, enabling or disabling QUIC respectively
+4. Run `sudo ./tor_runner.py` to start Containernet
 
 A private Tor network will start up, consensus is reached in about 30 seconds.
 
