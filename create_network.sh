@@ -10,8 +10,8 @@ fi
 FLAVOR="$1"
 DIR_PORT=$(grep Dirport torrc | awk '{print $2}')
 DA_NODES=3
-RELAY_NODES=16
-CLIENT_NODES=16
+RELAY_NODES=3
+CLIENT_NODES=3
 IP_TEMPLATE="10.0.0."
 IP_NUMBER=5
 echo "Clearing node directory"
