@@ -1,4 +1,4 @@
 [submodule "tor"]
 	path = tor
-	url = git@github.com:Jaapp-/tor.git
+	url = https://github.com/avandenbussche/tor.git
 	branch = tor-over-quic
