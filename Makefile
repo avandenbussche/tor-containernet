@@ -1,7 +1,7 @@
 .PHONY: quic vanilla run cleanup
 
 build:
-	sudo docker build -t tor .
+	sudo docker build -t tor-containernet .
 
 quic:
 	./create_network.sh quic
