@@ -15,7 +15,7 @@ CLIENT_NODES=3
 IP_TEMPLATE="10.0.0."
 IP_NUMBER=5
 echo "Clearing node directory"
-sudo rm -rf nodes/
+rm -rf nodes/
 mkdir nodes
 
 function create_node {
