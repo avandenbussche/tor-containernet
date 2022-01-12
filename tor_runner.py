@@ -34,7 +34,7 @@ def run(delay_ms: float, bandwidth: float, loss: float, jitter: float, docker_im
     net.addController('c0')
 
     info('*** Adding docker containers using tor images\n')
-    docker_nodes = [net.addDocker(node.nickname, ip=node.ip, dimage=docker_image, volumes=[f"{node.path}:/usr/local/etc/tor"]) for node in
+    docker_nodes = [net.addDocker(node.nickname, ip=node.ip, dimage=docker_image, volumes=[f"{node.path}:/usr/local/etc/tor","/torsh/nodes:/torsh/nodes"]) for node in
                     nodes]
 
     info('*** Adding switch\n')
