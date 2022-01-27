@@ -2,3 +2,6 @@
 	path = tor
 	url = https://github.com/avandenbussche/tor.git
 	branch = tor-over-quic
+[submodule "torsh"]
+	path = torsh
+	url = https://github.com/avandenbussche/torsh.git

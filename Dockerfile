@@ -1,42 +1,25 @@
-FROM ubuntu:20.04
+# syntax=docker/dockerfile:experimental
+FROM torsh-base:latest
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        curl \
-        build-essential \
-        automake \
-        cmake \
-        libssl-dev \
-        libevent-dev \
-        libz-dev \
-        python3 \
-        python3-pip \
-        iputils-ping \
-        net-tools \
-        iproute2 \
-        bash \
-        && rm -rf /var/lib/apt/lists/*
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup.sh && chmod +x rustup.sh && ./rustup.sh -y  && ~/.cargo/bin/rustup install 1.54
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get install -y python3-pip
+RUN apt-get install -y iproute2
+RUN apt-get install -y pkg-config
+RUN apt-get install -y net-tools
 
-ADD tor tor
-
-WORKDIR /tor/src/lib/quiche
-RUN ~/.cargo/bin/cargo build --release --features ffi
-RUN cp target/release/libquiche.so /usr/local/lib/
-RUN ldconfig
-
-WORKDIR /tor
-RUN ./autogen.sh
-RUN ./configure --disable-asciidoc
-RUN make -j20
-RUN make install
-
-ADD bwtool/bwtool.py /bwtool/
-ADD bwtool/requirements.txt /bwtool/
-WORKDIR /bwtool
+ADD bwtool/bwtool.py /torsh/bwtool/
+ADD bwtool/requirements.txt /torsh/bwtool/
+WORKDIR /torsh/bwtool
 RUN pip3 install -r requirements.txt
 RUN cp bwtool.py /usr/local/bin/
 
 COPY scripts/entrypoint.sh /usr/local/bin/
+
+ADD torsh /torsh/torsh-bin/.
+WORKDIR /torsh/torsh-bin
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/torsh/torsh-bin/target \
+    cargo build
 
 WORKDIR /usr/local/etc/tor
 

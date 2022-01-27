@@ -28,7 +28,7 @@ TestingMinExitFlagThreshold 0
 RunAsDaemon 0
 ConnLimit 60
 ShutdownWaitLength 0
-Log info stdout
+Log notice stdout
 ProtocolWarnings 1
 SafeLogging 0
 DisableDebuggerAttachment 0
