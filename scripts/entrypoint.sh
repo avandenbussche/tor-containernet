@@ -1,11 +1,19 @@
 #!/bin/sh
 
-echo "Starting TorSH node in the background"
-/torsh/torsh-bin/target/debug/torsh-node --socket-path /torsh/torsh.sock --whitelist-dir /torsh/whitelist &
+WORKDIR=/usr/local/etc/tor
 
-echo "Found following torrc configuration:"
-cat /usr/local/etc/tor/torrc
+# Check whether torrc exists
+if [ -f "$WORKDIR/torrc" ]; then
+    echo "Found torrc"
+else
+    echo "Couldn't find torrc"
+fi
 
+# Start Tor
 echo "Starting Tor in the background"
-chown -R root: /usr/local/etc/tor
+chown -R root: $WORKDIR
 tor &
+
+echo "Starting TorSH in the background"
+chmod +x $WORKDIR/torsh-launch.sh
+$WORKDIR/torsh-launch.sh

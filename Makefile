@@ -1,7 +1,10 @@
-.PHONY: quic vanilla run cleanup
+.PHONY: quic vanilla run cleanup torsh image
 
-build: # use buildkit to avoid having to rebuild rust deps each time, call `docker builder prune --filter type=exec.cachemount` to clear cache
-	sudo DOCKER_BUILDKIT=1 docker build -t torsh-containernet . --progress=plain
+torsh:
+	cargo build --target x86_64-unknown-linux-gnu --manifest-path torsh/Cargo.toml --target-dir build/ 
+
+image:
+	sudo docker build -t torsh-containernet . --no-cache
 
 quic:
 	sudo rm -rf nodes/

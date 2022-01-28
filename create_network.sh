@@ -10,13 +10,29 @@ fi
 FLAVOR="$1"
 DIR_PORT=$(grep Dirport torrc | awk '{print $2}')
 DA_NODES=3
-RELAY_NODES=0
+RELAY_NODES=0 # NOTE: TorSH should not have idea of relay nodes, since all clients are also relays!
 CLIENT_NODES=6
 IP_TEMPLATE="10.0.0."
 IP_NUMBER=5
 echo "Clearing node directory"
 rm -rf nodes/
 mkdir nodes
+
+TORSH_WHITELIST_AUTH_IPS=()
+TORSH_WHITELIST_AUTH_PORT="8000"
+TORSH_LAUNCHER_NAME="torsh-launch.sh"
+TORSH_SERVER_CMD='
+# Node is authority
+echo "Starting TorSH server in the background"
+ROCKET_ADDRESS="0.0.0.0" /torsh/bin/torsh-server &'
+TORSH_CLIENT_CMD='
+# Node is client or relay
+echo "Starting TorSH client in the background"
+/torsh/bin/torsh-node --socket-path /torsh/torsh.sock --whitelist-dir /torsh/whitelist '
+                      # we will append whitelist authorities below in for loop
+                      # --whitelist-authority-url 10.0.0.6:8000 \\ \
+                      # --whitelist-authority-url 10.0.0.7:8000 \\ \
+                      # --whitelist-authority-url 10.0.0.8:8000 &'
 
 function create_node {
   NAME=$1
@@ -48,12 +64,23 @@ for i in $(seq $DA_NODES); do
   echo | tor -f - --list-fingerprint --datadirectory "$NODE_DIR" --orport 1 --dirserver "x 127.0.0.1:1 ffffffffffffffffffffffffffffffffffffffff"
   cat torrc.da >> "$NODE_DIR"/torrc
   scripts/da_fingerprint.sh "$NODE_DIR" >>nodes/da
+  TORSH_WHITELIST_AUTH_IPS+=( "$IP" ) 
 done
 for i in $(seq $DA_NODES); do
-  cat nodes/da >>"nodes/a$i/torrc"
+  NAME="a$i"
+  NODE_DIR="nodes/$NAME"
+  cat nodes/da >>"$NODE_DIR/torrc"
+  echo "$TORSH_SERVER_CMD" >>"$NODE_DIR/$TORSH_LAUNCHER_NAME"
 done
 
+# Append whitelist authority urls to TorSH client launcher config
+for this_auth_ip in ${TORSH_WHITELIST_AUTH_IPS[@]}; do
+  TORSH_CLIENT_CMD="$TORSH_CLIENT_CMD --whitelist-authority-url $this_auth_ip:$TORSH_WHITELIST_AUTH_PORT"
+done
+TORSH_CLIENT_CMD="$TORSH_CLIENT_CMD &"
+
 # Relay nodes
+# NOTE: TorSH should not have idea of relay nodes, since all clients are also relays!
 for i in $(seq $RELAY_NODES); do
   NAME="r$i"
   NODE_DIR="nodes/$NAME"
@@ -68,4 +95,5 @@ for i in $(seq $CLIENT_NODES); do
   create_node "$NAME" "$NODE_DIR"
   cat nodes/da >> "$NODE_DIR/torrc"
   echo "SOCKSPort 9050" >> "$NODE_DIR/torrc"
+  echo "$TORSH_CLIENT_CMD" >> "$NODE_DIR/$TORSH_LAUNCHER_NAME"
 done
