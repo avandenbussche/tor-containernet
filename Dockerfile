@@ -10,6 +10,7 @@ RUN cp bwtool.py /usr/local/bin/
 COPY scripts/entrypoint.sh /usr/local/bin/
 
 RUN mkdir /torsh/whitelist
+COPY torsh/tests/sample_whitelist_db.json /torsh/whitelist/sample_whitelist_db.json
 WORKDIR /torsh/bin
 COPY build/x86_64-unknown-linux-gnu/debug/torsh-node .
 COPY build/x86_64-unknown-linux-gnu/debug/torsh-server .

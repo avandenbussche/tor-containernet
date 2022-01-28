@@ -24,7 +24,7 @@ TORSH_LAUNCHER_NAME="torsh-launch.sh"
 TORSH_SERVER_CMD='
 # Node is authority
 echo "Starting TorSH server in the background"
-ROCKET_ADDRESS="0.0.0.0" /torsh/bin/torsh-server &'
+ROCKET_ADDRESS="0.0.0.0" /torsh/bin/torsh-server --whitelist-file /torsh/whitelist/sample_whitelist_db.json &'
 TORSH_CLIENT_CMD='
 # Node is client or relay
 echo "Starting TorSH client in the background"
