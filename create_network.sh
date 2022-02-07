@@ -46,7 +46,7 @@ iptables -A torsh-outgoing-filter -j REJECT
 # Following rule will automatically by added by TorSH client once consensus is achieved
 # iptables -t filter -A OUTPUT -m owner --uid-owner $TOR_USER_ID -j torsh-outgoing-filter
 echo "Starting TorSH client in the background"
-/torsh/bin/torsh-node --socket-path /torsh/bin/torsh.sock --authlist-dir /torsh/authlist --whitelist-dir /torsh/whitelist --update-interval 60 '
+/torsh/bin/torsh-node --authlist-dir /torsh/authlist --whitelist-dir /torsh/whitelist --update-interval 60 '
 TORSH_PROXY_TORRC='
 # TorSH-specific configuration
 # Inspired by https://gitlab.torproject.org/legacy/trac/-/wikis/doc/OpenWRT
