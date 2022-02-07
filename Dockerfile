@@ -9,8 +9,10 @@ RUN pip3 install -r requirements.txt
 RUN cp bwtool.py /usr/local/bin/
 COPY scripts/entrypoint.sh /usr/local/bin/
 
+RUN mkdir /torsh/authlist
 RUN mkdir /torsh/whitelist
-COPY torsh/tests/sample_whitelist_db.json /torsh/whitelist/sample_whitelist_db.json
+COPY torsh/tests/sample_authlist_db.json /torsh/authlist/torsh_authlist-0.json
+COPY torsh/tests/sample_whitelist_db.json /torsh/whitelist/torsh_whitelist-0.json
 WORKDIR /torsh/bin
 COPY build/x86_64-unknown-linux-gnu/debug/torsh-node .
 COPY build/x86_64-unknown-linux-gnu/debug/torsh-server .
