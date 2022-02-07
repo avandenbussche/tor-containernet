@@ -24,11 +24,11 @@ TORSH_LAUNCHER_NAME="torsh-launch.sh"
 TORSH_SERVER_CMD='
 # Node is authority
 echo "Starting TorSH server in the background"
-ROCKET_ADDRESS="0.0.0.0" /torsh/bin/torsh-server --authlist-file /torsh/authlist/torsh_authlist-0.json --whitelist-file /torsh/whitelist/torsh_whitelist-0.json &'
+ROCKET_ADDRESS="0.0.0.0" /torsh/bin/torsh-server --authlist-file /torsh/authlist/torsh_nodelist-0.json --whitelist-file /torsh/whitelist/torsh_whitelist-0.json &'
 TORSH_CLIENT_CMD='
 # Node is client or relay
 # Redirection rules for transparent Tor
-ipset create torsh-authlist hash:ip
+ipset create torsh-nodelist hash:ip
 ipset create torsh-whitelist hash:ip,port
 iptables -t nat -A OUTPUT -p udp --dport 53 -m set --match-set torsh-whitelist dst,dst -j REDIRECT --to-ports 9053
 iptables -t nat -A OUTPUT -p tcp --syn -m set --match-set torsh-whitelist dst,dst -j REDIRECT --to-ports 9040
@@ -38,8 +38,8 @@ TOR_USER_ID=$(id -u tor)
 #iptables -t filter -A OUTPUT -p tcp -m state --state NEW -m owner --uid-owner $TOR_USER_ID -j REJECT
 iptables -N torsh-outgoing-filter
 #iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh all]"
-iptables -A torsh-outgoing-filter -p tcp -m set --match-set torsh-authlist dst -j ACCEPT
-iptables -A torsh-outgoing-filter -p udp -m set --match-set torsh-authlist dst -j ACCEPT
+iptables -A torsh-outgoing-filter -p tcp -m set --match-set torsh-nodelist dst -j ACCEPT
+iptables -A torsh-outgoing-filter -p udp -m set --match-set torsh-nodelist dst -j ACCEPT
 iptables -A torsh-outgoing-filter -p tcp -m set --match-set torsh-whitelist dst,dst -j ACCEPT
 #iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh denied]"
 iptables -A torsh-outgoing-filter -j REJECT
