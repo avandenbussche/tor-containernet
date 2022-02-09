@@ -28,20 +28,29 @@ ROCKET_ADDRESS="0.0.0.0" /torsh/bin/torsh-server --authlist-file /torsh/authlist
 TORSH_CLIENT_CMD='
 # Node is client or relay
 # Redirection rules for transparent Tor
-ipset create torsh-nodelist hash:ip
-ipset create torsh-whitelist hash:ip,port
-iptables -t nat -A OUTPUT -p udp --dport 53 -m set --match-set torsh-whitelist dst,dst -j REDIRECT --to-ports 9053
-iptables -t nat -A OUTPUT -p tcp --syn -m set --match-set torsh-whitelist dst,dst -j REDIRECT --to-ports 9040
-# Block traffic from Tor that is not in whitelist
+ipset create torsh-nodelist-ip-only hash:ip
+ipset create torsh-whitelist-ip-only hash:ip
+ipset create torsh-nodelist-port-ip hash:ip,port
+ipset create torsh-whitelist-port-ip hash:ip,port
 TOR_USER_ID=$(id -u tor)
+# While in OUTPUT (as opposed to PREROUTING), need to add --uid-owner 0 here to prevent infinite loops with exit connections emerging from tor process
+iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 0 -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9053
+iptables -t nat -A OUTPUT -p tcp --syn -m owner --uid-owner 0 -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9040
+# Block traffic from Tor that is not in whitelist
 #iptables -t filter -A OUTPUT -p tcp -m state --state NEW -m owner --uid-owner $TOR_USER_ID -m set ! --match-set torsh-authlist dst -j DROP
 #iptables -t filter -A OUTPUT -p tcp -m state --state NEW -m owner --uid-owner $TOR_USER_ID -j REJECT
 iptables -N torsh-outgoing-filter
-#iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh all]"
-iptables -A torsh-outgoing-filter -p tcp -m set --match-set torsh-nodelist dst -j ACCEPT
-iptables -A torsh-outgoing-filter -p udp -m set --match-set torsh-nodelist dst -j ACCEPT
-iptables -A torsh-outgoing-filter -p tcp -m set --match-set torsh-whitelist dst,dst -j ACCEPT
-#iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh denied]"
+# iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh all]"
+iptables -A torsh-outgoing-filter -p tcp -s 127.0.0.1 -j ACCEPT
+iptables -A torsh-outgoing-filter -p tcp -d 127.0.0.1 -j ACCEPT
+# iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh nonlocal]"
+iptables -A torsh-outgoing-filter -p tcp -m state --state NEW -m set --match-set torsh-nodelist-port-ip dst,dst -j ACCEPT
+iptables -A torsh-outgoing-filter -p udp -m state --state NEW -m set --match-set torsh-nodelist-port-ip dst,dst -j ACCEPT
+iptables -A torsh-outgoing-filter -p tcp -m state --state NEW -m set --match-set torsh-whitelist-port-ip dst,dst -j ACCEPT
+iptables -A torsh-outgoing-filter -p tcp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-nodelist-ip-only dst -j ACCEPT
+iptables -A torsh-outgoing-filter -p udp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-nodelist-ip-only dst -j ACCEPT
+iptables -A torsh-outgoing-filter -p tcp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-whitelist-ip-only dst -j ACCEPT
+iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh denied]"
 iptables -A torsh-outgoing-filter -j REJECT
 # Following rule will automatically by added by TorSH client once consensus is achieved
 # iptables -t filter -A OUTPUT -m owner --uid-owner $TOR_USER_ID -j torsh-outgoing-filter
