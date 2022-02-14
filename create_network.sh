@@ -34,13 +34,18 @@ ipset create torsh-nodelist-port-ip hash:ip,port
 ipset create torsh-whitelist-port-ip hash:ip,port
 TOR_USER_ID=$(id -u tor)
 # While in OUTPUT (as opposed to PREROUTING), need to add --uid-owner 0 here to prevent infinite loops with exit connections emerging from tor process
-iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 0 -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9053
+# iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 0 -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9053
+# iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 0 -j REDIRECT --to-ports 9053
+# iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 0 -j REDIRECT --to-ports 7777
+iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 0 -j NFQUEUE --queue-num 0
+iptables -t nat -A OUTPUT -p udp --sport 9053 -m owner --uid-owner $TOR_USER_ID -j NFQUEUE --queue-num 1
 iptables -t nat -A OUTPUT -p tcp --syn -m owner --uid-owner 0 -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9040
 # Block traffic from Tor that is not in whitelist
 #iptables -t filter -A OUTPUT -p tcp -m state --state NEW -m owner --uid-owner $TOR_USER_ID -m set ! --match-set torsh-authlist dst -j DROP
 #iptables -t filter -A OUTPUT -p tcp -m state --state NEW -m owner --uid-owner $TOR_USER_ID -j REJECT
 iptables -N torsh-outgoing-filter
 # iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh all]"
+iptables -A torsh-outgoing-filter -o lo -j ACCEPT
 iptables -A torsh-outgoing-filter -p tcp -s 127.0.0.1 -j ACCEPT
 iptables -A torsh-outgoing-filter -p tcp -d 127.0.0.1 -j ACCEPT
 # iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh nonlocal]"

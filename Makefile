@@ -1,7 +1,10 @@
-.PHONY: quic vanilla run cleanup torsh image
+.PHONY: quic vanilla run cleanup torsh image torsh-clean
 
 torsh:
 	cargo build --target x86_64-unknown-linux-gnu --manifest-path torsh/Cargo.toml --target-dir build/ 
+
+torsh-clean:
+	cargo clean --manifest-path torsh/Cargo.toml --target-dir build/ 
 
 image:
 	sudo docker build -t torsh-containernet . --no-cache
