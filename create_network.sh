@@ -10,7 +10,6 @@ fi
 FLAVOR="$1"
 DIR_PORT=$(grep Dirport torrc | awk '{print $2}')
 DA_NODES=1
-RELAY_NODES=0 # NOTE: TorSH should not have idea of relay nodes, since all clients are also relays!
 CLIENT_NODES=3
 IP_TEMPLATE="10.0.0."
 IP_NUMBER=5
@@ -24,25 +23,27 @@ TORSH_LAUNCHER_NAME="torsh-launch.sh"
 TORSH_SERVER_CMD='
 # Node is authority
 echo "Starting TorSH server in the background"
-ROCKET_ADDRESS="0.0.0.0" /torsh/bin/torsh-server --authlist-file /torsh/authlist/torsh_nodelist-0.json --whitelist-file /torsh/whitelist/torsh_whitelist-0.json &'
+ROCKET_ADDRESS="0.0.0.0" /torsh/bin/torsh-server --authlist-file /torsh/authlist/torsh_nodelist-0.json \
+                                                 --whitelist-file /torsh/whitelist/torsh_whitelist-0.json &'
 TORSH_CLIENT_CMD='
+
 # Node is client or relay
+TOR_USER_ID=$(id -u tor)
+
 # Redirection rules for transparent Tor
 ipset create torsh-nodelist-ip-only hash:ip
 ipset create torsh-whitelist-ip-only hash:ip
 ipset create torsh-nodelist-port-ip hash:ip,port
 ipset create torsh-whitelist-port-ip hash:ip,port
-TOR_USER_ID=$(id -u tor)
+
 # While in OUTPUT (as opposed to PREROUTING), need to add --uid-owner 0 here to prevent infinite loops with exit connections emerging from tor process
-# iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 0 -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9053
-# iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 0 -j REDIRECT --to-ports 9053
-# iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 0 -j REDIRECT --to-ports 7777
-iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 0 -j NFQUEUE --queue-num 0
-iptables -t nat -A OUTPUT -p udp --sport 9053 -m owner --uid-owner $TOR_USER_ID -j NFQUEUE --queue-num 1
-iptables -t nat -A OUTPUT -p tcp --syn -m owner --uid-owner 0 -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9040
-# Block traffic from Tor that is not in whitelist
-#iptables -t filter -A OUTPUT -p tcp -m state --state NEW -m owner --uid-owner $TOR_USER_ID -m set ! --match-set torsh-authlist dst -j DROP
-#iptables -t filter -A OUTPUT -p tcp -m state --state NEW -m owner --uid-owner $TOR_USER_ID -j REJECT
+
+# Following three rules will automatically by added by TorSH client once consensus is achieved
+# iptables -t nat -A OUTPUT -p udp --dport 53 -m owner ! --uid-owner $TOR_USER_ID -j NFQUEUE --queue-num 0
+# iptables -t nat -A OUTPUT -p udp --sport 9053 -m owner --uid-owner $TOR_USER_ID -j NFQUEUE --queue-num 1
+# iptables -t nat -A OUTPUT -p tcp --syn -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9040
+
+# Create chain that will block traffic from Tor that is not in whitelist
 iptables -N torsh-outgoing-filter
 # iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh all]"
 iptables -A torsh-outgoing-filter -o lo -j ACCEPT
@@ -57,10 +58,16 @@ iptables -A torsh-outgoing-filter -p udp -m state --state ESTABLISHED,RELATED -m
 iptables -A torsh-outgoing-filter -p tcp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-whitelist-ip-only dst -j ACCEPT
 iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh denied]"
 iptables -A torsh-outgoing-filter -j REJECT
+
 # Following rule will automatically by added by TorSH client once consensus is achieved
 # iptables -t filter -A OUTPUT -m owner --uid-owner $TOR_USER_ID -j torsh-outgoing-filter
+
 echo "Starting TorSH client in the background"
-/torsh/bin/torsh-node --authlist-dir /torsh/authlist --whitelist-dir /torsh/whitelist --update-interval 60 '
+TORSH_IPTABLES_USE_OUTPUT=1 /torsh/bin/torsh-node --authlist-dir /torsh/authlist \
+                                                  --whitelist-dir /torsh/whitelist \
+                                                  --whitelist-update-interval 60 \
+                                                  --relaylist-update-interval 30'
+
 TORSH_PROXY_TORRC='
 # TorSH-specific configuration
 # Inspired by https://gitlab.torproject.org/legacy/trac/-/wikis/doc/OpenWRT
@@ -106,15 +113,6 @@ for i in $(seq $DA_NODES); do
   NODE_DIR="nodes/$NAME"
   cat nodes/da >>"$NODE_DIR/torrc"
   echo "$TORSH_SERVER_CMD" >>"$NODE_DIR/$TORSH_LAUNCHER_NAME"
-done
-
-# Relay nodes
-# NOTE: TorSH should not have idea of relay nodes, since all clients are also relays!
-for i in $(seq $RELAY_NODES); do
-  NAME="r$i"
-  NODE_DIR="nodes/$NAME"
-  create_node "$NAME" "$NODE_DIR"
-  cat nodes/da >> "$NODE_DIR/torrc"
 done
 
 # Client nodes
