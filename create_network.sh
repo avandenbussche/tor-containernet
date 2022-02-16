@@ -63,10 +63,11 @@ iptables -A torsh-outgoing-filter -j REJECT
 # iptables -t filter -A OUTPUT -m owner --uid-owner $TOR_USER_ID -j torsh-outgoing-filter
 
 echo "Starting TorSH client in the background"
-TORSH_IPTABLES_USE_OUTPUT=1 /torsh/bin/torsh-node --authlist-dir /torsh/authlist \
-                                                  --whitelist-dir /torsh/whitelist \
-                                                  --whitelist-update-interval 60 \
-                                                  --relaylist-update-interval 30'
+TORSH_IPTABLES_USE_OUTPUT=1 RUST_BACKTRACE=1 \
+/torsh/bin/torsh-node --authlist-dir /torsh/authlist \
+                      --whitelist-dir /torsh/whitelist \
+                      --whitelist-update-interval 60 \
+                      --relaylist-update-interval 30'
 
 TORSH_PROXY_TORRC='
 # TorSH-specific configuration
