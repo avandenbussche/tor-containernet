@@ -54,7 +54,10 @@ openwrt-build-ipk:
 openwrt-launch-test-image:
 	RUST_TARGET_ARCH=$(TARGET_ARCH) ./scripts/launch_openwrt_test_image.sh
 
-
+openwrt-launch-dummy-server:
+	./staging/build/$(HOST_ARCH)/debug/torsh-server --authlist-file torsh/tests/sample_authlist_db.json \
+													--whitelist-file torsh/tests/sample_whitelist_db.json \
+													--release-bin-dir staging/output/
 
 util-generate-tars:
 	./scripts/generate_bin_tars.sh
