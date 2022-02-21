@@ -8,11 +8,22 @@ info:
 # Get absolute path to this directory
 PWD:=$(shell pwd)
 
-
-HOST_ARCH:=$(shell rustc -vV | awk '/^host/ { print $$2 }')
-ifndef TARGET_ARCH
-	TARGET_ARCH:=$(HOST_ARCH)
+# Define defaults
+HOST_RUSTC_ARCH:=$(shell rustc -vV | awk '/^host/ { print $$2 }')
+ifndef RUSTC_ARCH
+	RUSTC_ARCH:=$(HOST_RUSTC_ARCH)
 endif
+
+HOST_OPENWRT_ARCH:=$(shell ${HOST_RUSTC_ARCH/"unknown"/"openwrt"})
+ifndef OPENWRT_ARCH
+	OPENWRT_ARCH:=$(HOST_OPENWRT_ARCH)
+endif
+
+ifndef OPENWRT_SDK
+	OPENWRT_SDK:="x86_64-21.02.1"
+endif
+
+
 
 torsh:
 	cargo build --manifest-path torsh/Cargo.toml --target-dir staging/build/ 
@@ -21,8 +32,8 @@ torsh-clean:
 	cargo clean --manifest-path torsh/Cargo.toml --target-dir staging/build/
 
 torsh-cross:
-	cd torsh/ && cross build --target $(TARGET_ARCH)
-	mv torsh/target/$(TARGET_ARCH) staging/build/$(TARGET_ARCH)
+	cd torsh/ && cross build --target $(RUSTC_ARCH)
+	mv torsh/target/$(RUSTC_ARCH) staging/build/$(RUSTC_ARCH)
 
 
 containernet-base:
@@ -48,19 +59,21 @@ containernet-cleanup:
 
 
 
+
 openwrt-build-ipk:
-	RUST_TARGET_ARCH=$(TARGET_ARCH) ./scripts/build_ipk.sh
+	TARGET_OPENWRT_SDK=$(OPENWRT_SDK) TARGET_OPENWRT_ARCH=$(OPENWRT_ARCH) ./scripts/build_ipk.sh
 
 openwrt-launch-test-image:
-	RUST_TARGET_ARCH=$(TARGET_ARCH) ./scripts/launch_openwrt_test_image.sh
+	TARGET_OPENWRT_SDK=$(OPENWRT_SDK) TARGET_OPENWRT_ARCH=$(OPENWRT_ARCH) ./scripts/launch_openwrt_test_image.sh
 
 openwrt-launch-dummy-server:
-	./staging/build/$(HOST_ARCH)/debug/torsh-server --authlist-file torsh/tests/sample_authlist_db.json \
-													--whitelist-file torsh/tests/sample_whitelist_db.json \
-													--release-bin-dir staging/output/
+	./staging/build/$(HOST_RUSTC_ARCH)/debug/torsh-server \
+					--authlist-file torsh/tests/sample_authlist_db.json \
+					--whitelist-file torsh/tests/sample_whitelist_db.json \
+					--release-bin-dir staging/output/
 
-util-generate-tars:
-	./scripts/generate_bin_tars.sh
+util-generate-tar:
+	TARGET_RUSTC_ARCH=$(RUSTC_ARCH) TARGET_OPENWRT_ARCH=$(OPENWRT_ARCH) ./scripts/generate_bin_tar.sh
 
 util-print-targets:
 	rustc --print target-list

@@ -7,12 +7,11 @@
 
 ## Overview
 
-This repository contains utilities to build and test [TorSH](https://github.com/avandenbussche/torsh). Use this repository to:
+This repository contains utilities to build and test [TorSH](https://github.com/avandenbussche/torsh). More specifically, use this repository to:
 
-* develop and compile TorSH
+* develop and compile TorSH for both local or foreign architectures
 * test TorSH in a local Containernet swarm
 * build and test the TorSH OpenWrt package locally
-
 
 
 
@@ -28,18 +27,36 @@ The `Makefile` offers the following targets to compile TorSH:
   * Compiles the local TorSH submodule for the host's architecture using `cargo build`
 * `make torsh-clean`
   * Cleans the local TorSH submodule compiled for the host using `cargo clean`
-* `make torsh-cross TARGET_ARCH=<rustc-arch-triple>`
+* `make torsh-cross RUSTC_ARCH=<rustc-arch>`
   * Requires the `cross` Rust utility (install with `cargo install cross`)
   * Compiles the local TorSH submodule for the target architecture using `cross build`
   * To see a list of available target architectures, run `make util-print-targets`
 
 All built artifacts are moved into the `staging/` directory at the root of the repository.
 
+#### Sample Workflow
+
+For local development, simply compile TorSH using `make torsh`. When compiling for architechtures other than that of the test machine, the use of `make torsh-cross RUSTC_ARCH=<rustc-arch>` is required. The following architectures are known to compile without error:
+
+* *aarch64-unknown-linux-musl*
+  * 64-bit Raspberry Pi 4
+* *arm-unknown-linux-gnueabihf*
+  * An architecture supported by all Raspberry Pis
+* *mipsel-unknown-linux-musl*
+  * Popular OpenWrt architecture
+* *x86_64-unknown-linux-gnu*
+  * Most likely the architecture of the host machine you are compiling on
+* *x86_64-unknown-linux-musl*
+  * When testing the OpenWrt package locally, the *musl* variant is required even when the host machine uses *gnu*
+
+
+While other architectures are certainly possible, they may require some script tweaking to get going.
+
 
 
 ### Launching a Containernet Swarm
 
-The `Makefile` offers the following targets to test TorSH locally in Containernet swam:
+The `Makefile` offers the following targets to test TorSH locally in Containernet swarm:
 
 * `make containernet-base`
   * Builds the base Docker image for the Containernet nodes (only contains dependencies; doing this helps reduce build times during development)
@@ -52,13 +69,31 @@ The `Makefile` offers the following targets to test TorSH locally in Containerne
 * `make containernet-cleanup`
   * Cleans up lingering Docker containers in the event that Containernet crashes
 
+#### Sample Workflow
+
+To launch a local TorSH Containernet swarm, first ensure a base Docker image is cached by running `make containernet-base`.
+
+If TorSH is to be recompiled, run
+
+1. `make torsh`
+2. `make containernet-image`
+
+To launch a fresh swarm, run
+
+1. `make containernet-quic` or `make containernet-vanilla`
+2. `make containernet-run`
+
+If Containernet crashes, run
+
+1. `make containernet-cleanup`
+
 
 
 ### Compiling the OpenWrt TorSH Package
 
 The `Makefile` offers the following targets to compile and test the TorSH OpenWrt package locally:
 
-* `make openwrt-build-ipk`
+* `make openwrt-build-ipk OPENWRT_ARCH=<openwrt-arch> OPENWRT_SDK=<openwrt-sdk-image>`
   * Builds and packages the version of the `torsh-openwrt-pkg` submodule located in the root of the repository
   * Note that the binaries must be pre-compiled as OpenWrt devices cannot currently compile Rust locally
 * `make openwrt-launch-test-image`
@@ -66,3 +101,64 @@ The `Makefile` offers the following targets to compile and test the TorSH OpenWr
   * Commands to install and test the package must be entered manually for now (see below)
 * `make openwrt-launch-dummy-server`
   * Launches a local instance of `torsh-server` serving the binary tarballs for the OpenWrt compilation container
+
+#### Sample Workflow
+
+First ensure the dummy server is listening by running then `make openwrt-launch-dummy-server`. Then, to rebuild the `.ipk` from a fresh TorSH compilation for the target architecture, run:
+
+1. `make torsh-cross RUSTC_ARCH=<rustc-arch>`
+2. `make util-generate-tar OPENWRT_ARCH=<openwrt-arch> RUSTC_ARCH=<rustc-arch>`
+3. `make openwrt-build-ipk OPENWRT_ARCH=<openwrt-arch> OPENWRT_SDK=<openwrt-sdk-image>`
+
+For example, for a 64-bit ARM processor:
+
+1. `make torsh-cross RUSTC_ARCH=aarch64-unknown-linux-musl`
+2. `make util-generate-tar OPENWRT_ARCH=aarch64-openwrt-linux-musl RUSTC_ARCH=aarch64-unknown-linux-musl`
+3. `make openwrt-build-ipk OPENWRT_ARCH=aarch64-openwrt-linux-musl OPENWRT_SDK=aarch64_generic-21.02.2`
+
+
+
+## Utilities
+
+The `Makefile` offers the following utilities to help with various build and test needs:
+
+* `make util-generate-tar OPENWRT_ARCH=<openwrt-arch> RUSTC_ARCH=<rustc-arch>`
+  * Generates a source tarball to be fed to the OpenWrt SDK container by the dummy server
+* `make util-print-targets`
+  * Prints possible options for Rust cross-compilation targets (`<rustc-arch>`)
+
+
+
+## Architecture Equivalents
+
+Annoyingly, `rustc` and OpenWrt use slightly different names for different architectures (although there appears to be a pattern, sometimes it does not hold). Use the following table for equivalencies while building the OpenWrt packages, substituting different OpenWrt version numbers as desired. The OpenWrt image tags are available from [Docker Hub](https://hub.docker.com/r/openwrtorg/sdk/tags). Many images might be possible for a given architecture.
+
+| Rust Arch. (`<rustc-arch>`)       | OpenWrt Arch. (`<openwrt-arch>`) | SDK Image (`<openwrt-sdk-image>`) | Notes                             |
+| --------------------------------- | -------------------------------- | --------------------------------- | --------------------------------- |
+| `aarch64-unknown-linux-musl`      | `aarch64-openwrt-linux-musl`     | `bcm27xx-bcm2711-21.02.2`         | Raspberry Pi 4 (64-bit)           |
+| `mipsel-unknown-linux-musl`       | `mipsel-openwrt-linux-musl`      | `mipsel_mips32-21.02.1`           | Possibly a popular OpenWrt arch.? |
+| `x86_64-unknown-linux-musl`       | `x86_64-openwrt-linux-musl`      | `x86_64-21.02.1`                  | 64-bit Linux test env             |
+<!-- | `arm-unknown-linux-gnueabihf`     | `aarch64-openwrt-linux-musl`     | `bcm27xx-bcm2711-21.02.2`         | Raspberry Pi 4         | -->
+
+
+
+## Known Issues
+
+### OpenSSL Cross-Compilation
+
+The `cross` utility uses a slightly out-of-date version of `libc`, sometimes resulting in such an error:
+
+```
+error: failed to run custom build command for `openssl-sys v0.9.72`
+
+Caused by:
+  process didn't exit successfully: `/target/debug/build/openssl-sys-6a1c3c766acecfc0/build-script-main` (exit status: 1)
+  --- stderr
+  /target/debug/build/openssl-sys-6a1c3c766acecfc0/build-script-main: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.25' not found (required by /target/debug/build/openssl-sys-6a1c3c766acecfc0/build-script-main)
+  /target/debug/build/openssl-sys-6a1c3c766acecfc0/build-script-main: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.27' not found (required by /target/debug/build/openssl-sys-6a1c3c766acecfc0/build-script-main)
+warning: build failed, waiting for other jobs to finish...
+error: build failed
+make: *** [Makefile:24: torsh-cross] Error 101
+```
+
+This is only an issue for some architectures, such as `armv7-unknown-linux-gnueabihf` (contains optimizations for newer Raspberry Pis). While workarounds are possible, they result in tinkering with the `cross` build scripts and Dockerfiles, which is something beyond the scope of this project. For the time being, TorSH unfortunately will not be supported on architectures facing this issue.
