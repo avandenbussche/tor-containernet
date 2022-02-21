@@ -24,7 +24,8 @@ TORSH_SERVER_CMD='
 # Node is authority
 echo "Starting TorSH server in the background"
 ROCKET_ADDRESS="0.0.0.0" /torsh/bin/torsh-server --authlist-file /torsh/authlist/torsh_nodelist-0.json \
-                                                 --whitelist-file /torsh/whitelist/torsh_whitelist-0.json &'
+                                                 --whitelist-file /torsh/whitelist/torsh_whitelist-0.json \
+                                                 --release-bin-dir /torsh/node-releases/ &'
 TORSH_CLIENT_CMD='
 
 # Node is client or relay
