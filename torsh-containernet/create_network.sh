@@ -10,7 +10,7 @@ fi
 FLAVOR="$1"
 DIR_PORT=$(grep Dirport torrc | awk '{print $2}')
 DA_NODES=1
-CLIENT_NODES=3
+CLIENT_NODES=4
 IP_TEMPLATE="10.0.0."
 IP_NUMBER=5
 echo "Clearing node directory"
@@ -33,8 +33,10 @@ TOR_USER_ID=$(id -u tor)
 
 # Redirection rules for transparent Tor
 ipset create torsh-nodelist-ip-only hash:ip
+ipset create torsh-dnslist-ip-only hash:ip
 ipset create torsh-whitelist-ip-only hash:ip
 ipset create torsh-nodelist-port-ip hash:ip,port
+ipset create torsh-dnslist-port-ip hash:ip,port
 ipset create torsh-whitelist-port-ip hash:ip,port
 
 # While in OUTPUT (as opposed to PREROUTING), need to add --uid-owner 0 here to prevent infinite loops with exit connections emerging from tor process
@@ -42,9 +44,13 @@ ipset create torsh-whitelist-port-ip hash:ip,port
 # Following three rules will automatically by added by TorSH client once consensus is achieved
 # iptables -t nat -A OUTPUT -p udp --dport 53 -m owner ! --uid-owner $TOR_USER_ID -j NFQUEUE --queue-num 0
 # iptables -t nat -A OUTPUT -p udp --sport 9053 -m owner --uid-owner $TOR_USER_ID -j NFQUEUE --queue-num 1
+iptables -t nat -A OUTPUT -p tcp --syn --dport 9041 -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-nodelist-ip-only dst -j REDIRECT --to-ports 9040
 # iptables -t nat -A OUTPUT -p tcp --syn -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9040
+# iptables -t nat -A OUTPUT -p udp -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9041
+iptables -t nat -A OUTPUT -p udp -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-whitelist-port-ip dst,dst -j NFQUEUE --queue-num 3
 
 # Create chain that will block traffic from Tor that is not in whitelist
+# NOTE: There should never be any non-DNS UDP packets leaving through torsh-outgoing-filter
 iptables -N torsh-outgoing-filter
 # iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh all]"
 iptables -A torsh-outgoing-filter -o lo -j ACCEPT
@@ -53,9 +59,13 @@ iptables -A torsh-outgoing-filter -p tcp -d 127.0.0.1 -j ACCEPT
 # iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh nonlocal]"
 iptables -A torsh-outgoing-filter -p tcp -m state --state NEW -m set --match-set torsh-nodelist-port-ip dst,dst -j ACCEPT
 iptables -A torsh-outgoing-filter -p udp -m state --state NEW -m set --match-set torsh-nodelist-port-ip dst,dst -j ACCEPT
+iptables -A torsh-outgoing-filter -p tcp -m state --state NEW -m set --match-set torsh-dnslist-port-ip dst,dst -j ACCEPT
+iptables -A torsh-outgoing-filter -p udp -m state --state NEW -m set --match-set torsh-dnslist-port-ip dst,dst -j ACCEPT
 iptables -A torsh-outgoing-filter -p tcp -m state --state NEW -m set --match-set torsh-whitelist-port-ip dst,dst -j ACCEPT
 iptables -A torsh-outgoing-filter -p tcp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-nodelist-ip-only dst -j ACCEPT
 iptables -A torsh-outgoing-filter -p udp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-nodelist-ip-only dst -j ACCEPT
+iptables -A torsh-outgoing-filter -p tcp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-dnslist-ip-only dst -j ACCEPT
+iptables -A torsh-outgoing-filter -p udp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-dnslist-ip-only dst -j ACCEPT
 iptables -A torsh-outgoing-filter -p tcp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-whitelist-ip-only dst -j ACCEPT
 iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh denied]"
 iptables -A torsh-outgoing-filter -j REJECT
