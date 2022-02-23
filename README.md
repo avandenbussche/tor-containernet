@@ -31,6 +31,8 @@ The `Makefile` offers the following targets to compile TorSH:
   * Requires the `cross` Rust utility (install with `cargo install cross`)
   * Compiles the local TorSH submodule for the target architecture using `cross build`
   * To see a list of available target architectures, run `make util-print-targets`
+* `make torsh-cross-clean`
+  * Cleans all cross-compiled versions of TorSH (made using `make torsh-cross` from the staging directory (does not delete `debug` versions compiled for the host)
 
 All built artifacts are moved into the `staging/` directory at the root of the repository.
 
@@ -101,6 +103,8 @@ The `Makefile` offers the following targets to compile and test the TorSH OpenWr
   * Commands to install and test the package must be entered manually for now (see below)
 * `make openwrt-launch-dummy-server`
   * Launches a local instance of `torsh-server` serving the binary tarballs for the OpenWrt compilation container
+* `make openwrt-clean`
+  * Cleans contents of `staging/output/`, where all built OpenWrt artifacts are stored
 
 #### Sample Workflow
 
