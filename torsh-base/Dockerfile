@@ -60,6 +60,7 @@ RUN apt-get install -y dnsutils
 RUN apt-get install -y sudo
 RUN apt-get install -y libnfnetlink-dev
 RUN apt-get install -y libmnl-dev
+RUN apt-get install -y netcat
 
 WORKDIR /torsh
 RUN curl -L https://www.netfilter.org/pub/libnetfilter_queue/libnetfilter_queue-1.0.5.tar.bz2 | tar -xvj
