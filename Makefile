@@ -35,11 +35,15 @@ torsh-cross:
 	cd torsh/ && cross build --target $(RUSTC_ARCH)
 	mv torsh/target/$(RUSTC_ARCH) staging/build/$(RUSTC_ARCH)
 
+torsh-cross-clean:
+	find ./staging/build -mindepth 1 ! -regex '^./staging/build/debug\(/.*\)?' -delete
+
 
 containernet-base:
 	docker build -t torsh-base -f torsh-base/Dockerfile .
 
 containernet-image:
+	touch staging/output/notempty # Prevents error that output dir is empty during Docker build
 	docker build -t torsh-containernet -f torsh-containernet/Dockerfile . --no-cache
 
 containernet-quic:
@@ -54,8 +58,8 @@ containernet-run:
 	cd torsh-containernet/ && sudo ./tor_runner.py -i torsh-containernet
 
 containernet-cleanup:
-	docker rm -f $(sudo docker ps --filter 'name=mn.' -a -q) 2> /dev/null || echo "No containers to clean up"
-	mn -c
+	docker rm -f $(docker ps --filter 'name=mn.' -a -q) 2> /dev/null || echo "No containers to clean up"
+	sudo mn -c
 
 
 
@@ -71,6 +75,9 @@ openwrt-launch-dummy-server:
 					--authlist-file torsh/tests/sample_authlist_db.json \
 					--whitelist-file torsh/tests/sample_whitelist_db.json \
 					--release-bin-dir staging/output/
+
+openwrt-clean:
+	rm -rf staging/output/*
 
 util-generate-tar:
 	TARGET_RUSTC_ARCH=$(RUSTC_ARCH) TARGET_OPENWRT_ARCH=$(OPENWRT_ARCH) ./scripts/generate_bin_tar.sh
