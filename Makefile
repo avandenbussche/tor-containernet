@@ -39,7 +39,7 @@ torsh-cross:
 containernet-base:
 	docker build -t torsh-base -f torsh-base/Dockerfile .
 
-containernet-image: util-generate-tars
+containernet-image:
 	docker build -t torsh-containernet -f torsh-containernet/Dockerfile . --no-cache
 
 containernet-quic:
