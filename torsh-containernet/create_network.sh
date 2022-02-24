@@ -52,6 +52,11 @@ ipset create torsh-whitelist-port-ip hash:ip,port
 # iptables -t nat -A OUTPUT -p udp -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9041
 # iptables -t nat -A OUTPUT -p udp -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-whitelist-port-ip dst,dst -j NFQUEUE --queue-num 2
 
+# Laying the groundwork for profiling, will have to validate on device later
+# iptables -t mangle -A PREROUTING -p tcp --syn -j TEE --gateway 127.0.0.2
+# iptables -t mangle -A PREROUTING -p tcp --syn -j LOG --log-prefix "[tee]"
+# iptables -t raw -A OUTPUT -d 127.0.0.2 -p tcp -j NFQUEUE --queue-num 3
+
 # Create chain that will block traffic from Tor that is not in whitelist
 # NOTE: There should never be any non-DNS UDP packets leaving through torsh-outgoing-filter
 iptables -N torsh-outgoing-filter
@@ -81,7 +86,9 @@ TORSH_IPTABLES_USE_OUTPUT=1 RUST_BACKTRACE=1 \
 /torsh/bin/torsh-node --authlist-dir /torsh/authlist \
                       --whitelist-dir /torsh/whitelist \
                       --whitelist-update-interval 60 \
-                      --relaylist-update-interval 30'
+                      --relaylist-update-interval 30 \
+                      --profiling-max-endpoints 10 \
+                      --profiling-submission-interval 30'
 
 TORSH_PROXY_TORRC='
 # TorSH-specific configuration
