@@ -166,3 +166,7 @@ make: *** [Makefile:24: torsh-cross] Error 101
 ```
 
 This is only an issue for some architectures, such as `armv7-unknown-linux-gnueabihf` (contains optimizations for newer Raspberry Pis). While workarounds are possible, they result in tinkering with the `cross` build scripts and Dockerfiles, which is something beyond the scope of this project. For the time being, TorSH unfortunately will not be supported on architectures facing this issue.
+
+### Infinite UDP Redirect Loops in Containernet
+
+Because of the inability to differentiate between PREROUTING and OUTPUT packets in Containernet, sending UDP traffic over TCP in a local Containernet environment will result in UDP over TCP packets being indefinitely bounced around the swarm. This could probably be fixed by having the TorSH process owned by its own user, but this seemed at first glance to have stranger interactions with the `iptables` utility... fixing this is not a priority right now given the tight thesis deadlines!

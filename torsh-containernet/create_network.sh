@@ -39,15 +39,18 @@ ipset create torsh-nodelist-port-ip hash:ip,port
 ipset create torsh-dnslist-port-ip hash:ip,port
 ipset create torsh-whitelist-port-ip hash:ip,port
 
-# While in OUTPUT (as opposed to PREROUTING), need to add --uid-owner 0 here to prevent infinite loops with exit connections emerging from tor process
+# While in OUTPUT (as opposed to PREROUTING), especially important to specify --uid-owner $TOR_USER_ID to prevent
+#  infinite redirection loops with exit connections emerging from tor process
+# N.B.: Sending UDP over TCP results in infinite redirection loops while both local and redirected packets
+#  are handled in OUTPUT... anticipating this will go away once PREROUTING is used for local packets
 
 # Following three rules will automatically by added by TorSH client once consensus is achieved
 # iptables -t nat -A OUTPUT -p udp --dport 53 -m owner ! --uid-owner $TOR_USER_ID -j NFQUEUE --queue-num 0
 # iptables -t nat -A OUTPUT -p udp --sport 9053 -m owner --uid-owner $TOR_USER_ID -j NFQUEUE --queue-num 1
-iptables -t nat -A OUTPUT -p tcp --syn --dport 9041 -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-nodelist-ip-only dst -j REDIRECT --to-ports 9040
+# iptables -t nat -A OUTPUT -p tcp --syn --dport 9041 -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-nodelist-ip-only dst -j REDIRECT --to-ports 9040
 # iptables -t nat -A OUTPUT -p tcp --syn -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9040
 # iptables -t nat -A OUTPUT -p udp -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-whitelist-port-ip dst,dst -j REDIRECT --to-ports 9041
-iptables -t nat -A OUTPUT -p udp -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-whitelist-port-ip dst,dst -j NFQUEUE --queue-num 3
+# iptables -t nat -A OUTPUT -p udp -m owner ! --uid-owner $TOR_USER_ID -m set --match-set torsh-whitelist-port-ip dst,dst -j NFQUEUE --queue-num 2
 
 # Create chain that will block traffic from Tor that is not in whitelist
 # NOTE: There should never be any non-DNS UDP packets leaving through torsh-outgoing-filter
