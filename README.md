@@ -139,7 +139,7 @@ Annoyingly, `rustc` and OpenWrt use slightly different names for different archi
 
 | Rust Arch. (`<rustc-arch>`)       | OpenWrt Arch. (`<openwrt-arch>`) | SDK Image (`<openwrt-sdk-image>`) | Notes                             |
 | --------------------------------- | -------------------------------- | --------------------------------- | --------------------------------- |
-| `aarch64-unknown-linux-musl`      | `aarch64-openwrt-linux-musl`     | `bcm27xx-bcm2711-21.02.2`         | Raspberry Pi 4 (64-bit)           |
+| `aarch64-unknown-linux-musl`      | `aarch64-openwrt-linux-musl`     | `aarch64_generic-21.02.2`         | Raspberry Pi 4 (64-bit)           |
 | `mipsel-unknown-linux-musl`       | `mipsel-openwrt-linux-musl`      | `mipsel_mips32-21.02.1`           | Possibly a popular OpenWrt arch.? |
 | `x86_64-unknown-linux-musl`       | `x86_64-openwrt-linux-musl`      | `x86_64-21.02.1`                  | 64-bit Linux test env             |
 <!-- | `arm-unknown-linux-gnueabihf`     | `aarch64-openwrt-linux-musl`     | `bcm27xx-bcm2711-21.02.2`         | Raspberry Pi 4         | -->
