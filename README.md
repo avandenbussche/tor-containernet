@@ -108,7 +108,7 @@ The `Makefile` offers the following targets to compile and test the TorSH OpenWr
 
 #### Sample Workflow
 
-First ensure the dummy server is listening by running then `make openwrt-launch-dummy-server`. Then, to rebuild the `.ipk` from a fresh TorSH compilation for the target architecture, run:
+First ensure the dummy server is listening by running `make openwrt-launch-dummy-server` on the hose machine. Then, to rebuild the `.ipk` from a fresh TorSH compilation for the target architecture, run:
 
 1. `make torsh-cross RUSTC_ARCH=<rustc-arch>`
 2. `make util-generate-tar OPENWRT_ARCH=<openwrt-arch> RUSTC_ARCH=<rustc-arch>`
@@ -120,6 +120,12 @@ For example, for a 64-bit ARM processor:
 2. `make util-generate-tar OPENWRT_ARCH=aarch64-openwrt-linux-musl RUSTC_ARCH=aarch64-unknown-linux-musl`
 3. `make openwrt-build-ipk OPENWRT_ARCH=aarch64-openwrt-linux-musl OPENWRT_SDK=aarch64_generic-21.02.2`
 
+To test the built package, launch a test image by running `make openwrt-launch-test-image`. Then, from inside the launched container, run:
+
+1. `opkg update`
+2. `opkg install /tmp/torsh/<DESIRED_BUILD>.ipk`
+
+Check the logs by running `logread` from within the container.
 
 
 ## Utilities
@@ -165,7 +171,7 @@ error: build failed
 make: *** [Makefile:24: torsh-cross] Error 101
 ```
 
-This is only an issue for some architectures, such as `armv7-unknown-linux-gnueabihf` (contains optimizations for newer Raspberry Pis). While workarounds are possible, they result in tinkering with the `cross` build scripts and Dockerfiles, which is something beyond the scope of this project. For the time being, TorSH unfortunately will not be supported on architectures facing this issue.
+This seems to only be an issue for GNU architectures, such as `armv7-unknown-linux-gnueabihf` (contains optimizations for newer Raspberry Pis) or `x86_64-linux-gnu`. While workarounds are possible, they result in tinkering with the `cross` build scripts and Dockerfiles, which is something beyond the scope of this project. For the time being, TorSH unfortunately will not be supported on architectures facing this issue.
 
 ### Infinite UDP Redirect Loops in Containernet
 

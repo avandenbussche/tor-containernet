@@ -33,6 +33,7 @@ torsh-clean:
 
 torsh-cross:
 	cd torsh/ && cross build --target $(RUSTC_ARCH)
+	rm -rf staging/build/$(RUSTC_ARCH)
 	mv torsh/target/$(RUSTC_ARCH) staging/build/$(RUSTC_ARCH)
 
 torsh-cross-clean:
@@ -70,8 +71,8 @@ openwrt-build-ipk:
 openwrt-launch-test-image:
 	TARGET_OPENWRT_SDK=$(OPENWRT_SDK) TARGET_OPENWRT_ARCH=$(OPENWRT_ARCH) ./scripts/launch_openwrt_test_image.sh
 
-openwrt-launch-dummy-server:
-	./staging/build/$(HOST_RUSTC_ARCH)/debug/torsh-server \
+openwrt-launch-dummy-server: torsh
+	ROCKET_ADDRESS="0.0.0.0" ./staging/build/debug/torsh-server \
 					--authlist-file torsh/tests/sample_authlist_db.json \
 					--whitelist-file torsh/tests/sample_whitelist_db.json \
 					--release-bin-dir staging/output/
