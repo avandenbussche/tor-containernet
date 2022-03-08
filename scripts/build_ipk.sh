@@ -7,7 +7,8 @@ OUTPUT_DIR=$STAGING_DIR/output
 echo "Working in directory $ROOT_DIR"
 echo "Building OpenWrt ipk using SDK $TARGET_OPENWRT_SDK for architecture $TARGET_OPENWRT_ARCH"
 
-OPENWRT_ARCH_FAMILY="${TARGET_OPENWRT_SDK%%-*}"
+OPENWRT_ARCH_FAMILY="${TARGET_OPENWRT_SDK%%-2*}" # -2 is cheating way of extracting everything before version number -21.02 (for example) 
+echo "Extracted architecture family name $OPENWRT_ARCH_FAMILY from SDK name"
 
 docker run --rm -v $STAGING_DIR/openwrt/bin/:/home/build/openwrt/bin/ \
 				-v $ROOT_DIR/torsh-openwrt-pkg/:/home/build/openwrt/package/torsh/ \
@@ -16,4 +17,4 @@ docker run --rm -v $STAGING_DIR/openwrt/bin/:/home/build/openwrt/bin/ \
 														make defconfig && \
 														./scripts/feeds install torsh && \
 														sudo make package/torsh/compile -j1 V=s"
-cp $STAGING_DIR/openwrt/bin/packages/$OPENWRT_ARCH_FAMILY/base/torsh_0.1-1_$OPENWRT_ARCH_FAMILY.ipk "$OUTPUT_DIR/torsh-node_${TARGET_OPENWRT_ARCH}_0.1-1.ipk"
+cp $STAGING_DIR/openwrt/bin/packages/$OPENWRT_ARCH_FAMILY/base/torsh_*.ipk "$OUTPUT_DIR/torsh-node_${OPENWRT_ARCH_FAMILY}.ipk"

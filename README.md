@@ -118,7 +118,7 @@ For example, for a 64-bit ARM processor:
 
 1. `make torsh-cross RUSTC_ARCH=aarch64-unknown-linux-musl`
 2. `make util-generate-tar OPENWRT_ARCH=aarch64-openwrt-linux-musl RUSTC_ARCH=aarch64-unknown-linux-musl`
-3. `make openwrt-build-ipk OPENWRT_ARCH=aarch64-openwrt-linux-musl OPENWRT_SDK=aarch64_generic-21.02.2`
+3. `make openwrt-build-ipk OPENWRT_ARCH=aarch64-openwrt-linux-musl OPENWRT_SDK=aarch64_cortex-a72-21.02.2`
 
 To test the built package, launch a test image by running `make openwrt-launch-test-image`. Then, from inside the launched container, run:
 
@@ -145,7 +145,9 @@ Annoyingly, `rustc` and OpenWrt use slightly different names for different archi
 
 | Rust Arch. (`<rustc-arch>`)       | OpenWrt Arch. (`<openwrt-arch>`) | SDK Image (`<openwrt-sdk-image>`) | Notes                             |
 | --------------------------------- | -------------------------------- | --------------------------------- | --------------------------------- |
-| `aarch64-unknown-linux-musl`      | `aarch64-openwrt-linux-musl`     | `aarch64_generic-21.02.2`         | Raspberry Pi 4 (64-bit)           |
+| `arm-unknown-linux-musleabihf`    | `arm-openwrt-linux-muslgnueabi`  | `arm_arm1176jzf-s_vfp-21.02.2`    | Raspberry Pi Model B+             |
+| `arm-unknown-linux-musleabihf`    | `arm-openwrt-linux-muslgnueabi`  | `arm_cortex-a7_neon-vfpv4-21.02.2`| Raspberry Pi 2 Model B v1.0/1.1   |
+| `aarch64-unknown-linux-musl`      | `aarch64-openwrt-linux-musl`     | `aarch64_cortex-a72-21.02.2`      | Raspberry Pi 4 (64-bit)           |
 | `mipsel-unknown-linux-musl`       | `mipsel-openwrt-linux-musl`      | `mipsel_mips32-21.02.1`           | Possibly a popular OpenWrt arch.? |
 | `x86_64-unknown-linux-musl`       | `x86_64-openwrt-linux-musl`      | `x86_64-21.02.1`                  | 64-bit Linux test env             |
 <!-- | `arm-unknown-linux-gnueabihf`     | `aarch64-openwrt-linux-musl`     | `bcm27xx-bcm2711-21.02.2`         | Raspberry Pi 4         | -->
