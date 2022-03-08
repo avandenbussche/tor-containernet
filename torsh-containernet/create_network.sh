@@ -59,27 +59,29 @@ ipset create torsh-whitelist-port-ip hash:ip,port
 
 # Create chain that will block traffic from Tor that is not in whitelist
 # NOTE: There should never be any non-DNS UDP packets leaving through torsh-outgoing-filter
-iptables -N torsh-outgoing-filter
-# iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh all]"
-iptables -A torsh-outgoing-filter -o lo -j ACCEPT
-iptables -A torsh-outgoing-filter -p tcp -s 127.0.0.1 -j ACCEPT
-iptables -A torsh-outgoing-filter -p tcp -d 127.0.0.1 -j ACCEPT
-# iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh nonlocal]"
-iptables -A torsh-outgoing-filter -p tcp -m state --state NEW -m set --match-set torsh-nodelist-port-ip dst,dst -j ACCEPT
-iptables -A torsh-outgoing-filter -p udp -m state --state NEW -m set --match-set torsh-nodelist-port-ip dst,dst -j ACCEPT
-iptables -A torsh-outgoing-filter -p tcp -m state --state NEW -m set --match-set torsh-dnslist-port-ip dst,dst -j ACCEPT
-iptables -A torsh-outgoing-filter -p udp -m state --state NEW -m set --match-set torsh-dnslist-port-ip dst,dst -j ACCEPT
-iptables -A torsh-outgoing-filter -p tcp -m state --state NEW -m set --match-set torsh-whitelist-port-ip dst,dst -j ACCEPT
-iptables -A torsh-outgoing-filter -p tcp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-nodelist-ip-only dst -j ACCEPT
-iptables -A torsh-outgoing-filter -p udp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-nodelist-ip-only dst -j ACCEPT
-iptables -A torsh-outgoing-filter -p tcp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-dnslist-ip-only dst -j ACCEPT
-iptables -A torsh-outgoing-filter -p udp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-dnslist-ip-only dst -j ACCEPT
-iptables -A torsh-outgoing-filter -p tcp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-whitelist-ip-only dst -j ACCEPT
-iptables -A torsh-outgoing-filter -j LOG --log-prefix "[torsh denied]"
-iptables -A torsh-outgoing-filter -j REJECT
+iptables -t mangle -N torsh-outgoing-filter
+# iptables-t mangle  -A torsh-outgoing-filter -j LOG --log-prefix "[torsh all]"
+iptables -t mangle -A torsh-outgoing-filter -o lo -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -p tcp -s 127.0.0.1 -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -p tcp -d 127.0.0.1 -j ACCEPT
+# iptables -t mangle -A torsh-outgoing-filter -j LOG --log-prefix "[torsh nonlocal]"
+iptables -t mangle -A torsh-outgoing-filter -p tcp -d 172.17.0.1 --tcp-flags FIN,SYN,RST,ACK SYN -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -p tcp -d 172.17.0.1 -j NFQUEUE --queue-num 4
+iptables -t mangle -A torsh-outgoing-filter -p tcp -m state --state NEW -m set --match-set torsh-nodelist-port-ip dst,dst -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -p udp -m state --state NEW -m set --match-set torsh-nodelist-port-ip dst,dst -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -p tcp -m state --state NEW -m set --match-set torsh-dnslist-port-ip dst,dst -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -p udp -m state --state NEW -m set --match-set torsh-dnslist-port-ip dst,dst -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -p tcp -m state --state NEW -m set --match-set torsh-whitelist-port-ip dst,dst -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -p tcp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-nodelist-ip-only dst -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -p udp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-nodelist-ip-only dst -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -p tcp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-dnslist-ip-only dst -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -p udp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-dnslist-ip-only dst -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -p tcp -m state --state ESTABLISHED,RELATED -m set --match-set torsh-whitelist-ip-only dst -j ACCEPT
+iptables -t mangle -A torsh-outgoing-filter -j LOG --log-prefix "[torsh denied]"
+iptables -t mangle -A torsh-outgoing-filter -j REJECT
 
 # Following rule will automatically by added by TorSH client once consensus is achieved
-# iptables -t filter -A OUTPUT -m owner --uid-owner $TOR_USER_ID -j torsh-outgoing-filter
+# iptables -t mangle -A OUTPUT -m owner --uid-owner $TOR_USER_ID -j torsh-outgoing-filter
 
 echo "Starting TorSH client in the background"
 TORSH_IPTABLES_USE_OUTPUT=1 RUST_BACKTRACE=1 \
@@ -96,7 +98,8 @@ TORSH_PROXY_TORRC='
 VirtualAddrNetwork 10.192.0.0/10
 AutomapHostsOnResolve 1
 TransPort 9040
-DNSPort 9053'
+DNSPort 9053
+ExitPolicy accept *:*'
 
 function create_node {
   NAME=$1
@@ -133,7 +136,8 @@ done
 for i in $(seq $DA_NODES); do
   NAME="a$i"
   NODE_DIR="nodes/$NAME"
-  cat nodes/da >>"$NODE_DIR/torrc"
+  cat nodes/da >> "$NODE_DIR/torrc"
+  echo "ExitPolicy reject *:*" >>"$NODE_DIR/torrc"
   echo "$TORSH_SERVER_CMD" >>"$NODE_DIR/$TORSH_LAUNCHER_NAME"
 done
 
