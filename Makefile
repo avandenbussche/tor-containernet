@@ -32,7 +32,7 @@ torsh-clean:
 	cargo clean --manifest-path torsh/Cargo.toml --target-dir staging/build/
 
 torsh-cross:
-	cd torsh/ && cross build --target $(RUSTC_ARCH)
+	cd torsh/ && cross build --target $(RUSTC_ARCH) --release --lib --bin torsh-node
 	rm -rf staging/build/$(RUSTC_ARCH)
 	mv torsh/target/$(RUSTC_ARCH) staging/build/$(RUSTC_ARCH)
 
@@ -59,7 +59,7 @@ containernet-run:
 	cd torsh-containernet/ && sudo ./tor_runner.py -i torsh-containernet
 
 containernet-cleanup:
-	docker rm -f $(docker ps --filter 'name=mn.' -a -q) 2> /dev/null || echo "No containers to clean up"
+	sudo docker rm -f $(docker ps --filter 'name=mn.' -a -q) 2> /dev/null || echo "No containers to clean up"
 	sudo mn -c
 
 
@@ -78,6 +78,7 @@ openwrt-launch-dummy-server: torsh
 					--release-bin-dir staging/output/
 
 openwrt-clean:
+	sudo rm -rf staging/openwrt/*
 	rm -rf staging/output/*
 
 util-generate-tar:
