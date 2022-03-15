@@ -26,7 +26,7 @@ endif
 
 
 torsh:
-	cargo build --manifest-path torsh/Cargo.toml --target-dir staging/build/ 
+	cargo build --manifest-path torsh/Cargo.toml --target-dir staging/build/ --features server
 
 torsh-clean:
 	cargo clean --manifest-path torsh/Cargo.toml --target-dir staging/build/
@@ -72,7 +72,7 @@ openwrt-launch-test-image:
 	TARGET_OPENWRT_SDK=$(OPENWRT_SDK) TARGET_OPENWRT_ARCH=$(OPENWRT_ARCH) ./scripts/launch_openwrt_test_image.sh
 
 openwrt-launch-dummy-server: torsh
-	ROCKET_ADDRESS="0.0.0.0" ./staging/build/debug/torsh-server \
+	ROCKET_ADDRESS="0.0.0.0" ROCKET_LIMITS={string="512 MiB"} ./staging/build/debug/torsh-server \
 					--authlist-file torsh/tests/sample_authlist_db.json \
 					--whitelist-file torsh/tests/sample_whitelist_db.json \
 					--release-bin-dir staging/output/
