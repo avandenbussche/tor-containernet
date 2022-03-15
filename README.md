@@ -120,10 +120,16 @@ For example, for a 64-bit ARM processor:
 2. `make util-generate-tar OPENWRT_ARCH=aarch64-openwrt-linux-musl RUSTC_ARCH=aarch64-unknown-linux-musl`
 3. `make openwrt-build-ipk OPENWRT_ARCH=aarch64-openwrt-linux-musl OPENWRT_SDK=aarch64_cortex-a72-21.02.2`
 
-To test the built package, launch a test image by running `make openwrt-launch-test-image`. Then, from inside the launched container, run:
+To test the built package on the local machine (the following example assumes an `x86_64` architecture), first build the package for the target machine then launch a test image by running:
 
-1. `opkg update`
-2. `opkg install /tmp/torsh/<DESIRED_BUILD>.ipk`
+1. `make torsh-cross RUSTC_ARCH=x86_64-unknown-linux-musl`
+2. `make util-generate-tar OPENWRT_ARCH=x86_64-openwrt-linux-musl RUSTC_ARCH=x86_64-unknown-linux-musl`
+3. `make openwrt-build-ipk OPENWRT_ARCH=x86_64-openwrt-linux-musl OPENWRT_SDK=x86_64-21.02.1`
+4. `make openwrt-launch-test-image`
+
+Then, from inside the launched container, run `opkg install /tmp/torsh/torsh-node_x86_64.ipk`.
+
+##### Checking Logs
 
 Check the logs by running `logread` from within the container.
 
@@ -150,7 +156,6 @@ Annoyingly, `rustc` and OpenWrt use slightly different names for different archi
 | `aarch64-unknown-linux-musl`      | `aarch64-openwrt-linux-musl`     | `aarch64_cortex-a72-21.02.2`      | Raspberry Pi 4 (64-bit)           |
 | `mipsel-unknown-linux-musl`       | `mipsel-openwrt-linux-musl`      | `mipsel_mips32-21.02.1`           | Possibly a popular OpenWrt arch.? |
 | `x86_64-unknown-linux-musl`       | `x86_64-openwrt-linux-musl`      | `x86_64-21.02.1`                  | 64-bit Linux test env             |
-<!-- | `arm-unknown-linux-gnueabihf`     | `aarch64-openwrt-linux-musl`     | `bcm27xx-bcm2711-21.02.2`         | Raspberry Pi 4         | -->
 
 
 
