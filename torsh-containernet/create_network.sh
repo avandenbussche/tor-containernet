@@ -32,7 +32,6 @@ TORSH_IPTABLES_USE_OUTPUT=1 RUST_BACKTRACE=1 TORSH_IN_CONTAINERNET=1 \
 /torsh/bin/torsh-node --authlist-dir /torsh/authlist \
                       --whitelist-dir /torsh/whitelist \
                       --whitelist-update-interval 60 \
-                      --relaylist-update-interval 30 \
                       --profiling-max-endpoints 10 \
                       --profiling-submission-interval 30'
 
