@@ -38,21 +38,7 @@ All built artifacts are moved into the `staging/` directory at the root of the r
 
 #### Sample Workflow
 
-For local development, simply compile TorSH using `make torsh`. When compiling for architechtures other than that of the test machine, the use of `make torsh-cross RUSTC_ARCH=<rustc-arch>` is required. The following architectures are known to compile without error:
-
-* *aarch64-unknown-linux-musl*
-  * 64-bit Raspberry Pi 4
-* *arm-unknown-linux-gnueabihf*
-  * An architecture supported by all Raspberry Pis
-* *mipsel-unknown-linux-musl*
-  * Popular OpenWrt architecture
-* *x86_64-unknown-linux-gnu*
-  * Most likely the architecture of the host machine you are compiling on
-* *x86_64-unknown-linux-musl*
-  * When testing the OpenWrt package locally, the *musl* variant is required even when the host machine uses *gnu*
-
-
-While other architectures are certainly possible, they may require some script tweaking to get going.
+For local development, simply compile TorSH using `make torsh`. When compiling for architechtures other than that of the test machine, the use of `make torsh-cross RUSTC_ARCH=<rustc-arch>` is required. Note that OpenWrt uses the `musl` instead of the `gnu` library.
 
 
 
@@ -181,6 +167,6 @@ make: *** [Makefile:24: torsh-cross] Error 101
 
 This seems to only be an issue for GNU architectures, such as `armv7-unknown-linux-gnueabihf` (contains optimizations for newer Raspberry Pis) or `x86_64-linux-gnu`. While workarounds are possible, they result in tinkering with the `cross` build scripts and Dockerfiles, which is something beyond the scope of this project. For the time being, TorSH unfortunately will not be supported on architectures facing this issue.
 
-### Infinite UDP Redirect Loops in Containernet
+### Infinite UDP over TCP Redirect Loops in Containernet
 
 Because of the inability to differentiate between PREROUTING and OUTPUT packets in Containernet, sending UDP traffic over TCP in a local Containernet environment will result in UDP over TCP packets being indefinitely bounced around the swarm. This could probably be fixed by having the TorSH process owned by its own user, but this seemed at first glance to have stranger interactions with the `iptables` utility... fixing this is not a priority right now given the tight thesis deadlines!
