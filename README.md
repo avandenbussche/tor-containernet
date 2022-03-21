@@ -98,6 +98,8 @@ The `Makefile` offers the following targets to compile and test the TorSH OpenWr
 * `make openwrt-build-ipk OPENWRT_ARCH=<openwrt-arch> OPENWRT_SDK=<openwrt-sdk-image>`
   * Builds and packages the version of the `torsh-openwrt-pkg` submodule located in the root of the repository
   * Note that the binaries must be pre-compiled as OpenWrt devices cannot currently compile Rust locally
+* `make openwrt-build-package-index`
+  * Builds the `Packages.gz` and `Packages.sig` required for an OpenWrt package repository, including all locally built `.ipk`s, using the host's architecture for the Docker container. 
 * `make openwrt-launch-test-image`
   * Launches a Docker container containing an OpenWrt rootfs
   * Commands to install and test the package must be entered manually for now (see below)
@@ -108,7 +110,7 @@ The `Makefile` offers the following targets to compile and test the TorSH OpenWr
 
 #### Sample Workflow
 
-First ensure the dummy server is listening by running `make openwrt-launch-dummy-server` on the hose machine. Then, to rebuild the `.ipk` from a fresh TorSH compilation for the target architecture, run:
+To rebuild the `.ipk` from a fresh TorSH compilation for the target architecture, run:
 
 1. `make torsh-cross RUSTC_ARCH=<rustc-arch>`
 2. `make util-generate-tar OPENWRT_ARCH=<openwrt-arch> RUSTC_ARCH=<rustc-arch>`
@@ -120,18 +122,17 @@ For example, for a 64-bit ARM processor:
 2. `make util-generate-tar OPENWRT_ARCH=aarch64-openwrt-linux-musl RUSTC_ARCH=aarch64-unknown-linux-musl`
 3. `make openwrt-build-ipk OPENWRT_ARCH=aarch64-openwrt-linux-musl OPENWRT_SDK=aarch64_cortex-a72-21.02.2`
 
-To test the built package on the local machine (the following example assumes an `x86_64` architecture), first build the package for the target machine then launch a test image by running:
+To test the built package on the local machine (the following example assumes an `x86_64` architecture), first launch a dummy server by running `make openwrt-launch-dummy-server` on the host machine. Then build the package for the target machine and launch a test image by running:
 
 1. `make torsh-cross RUSTC_ARCH=x86_64-unknown-linux-musl`
 2. `make util-generate-tar OPENWRT_ARCH=x86_64-openwrt-linux-musl RUSTC_ARCH=x86_64-unknown-linux-musl`
 3. `make openwrt-build-ipk OPENWRT_ARCH=x86_64-openwrt-linux-musl OPENWRT_SDK=x86_64-21.02.1`
-4. `make openwrt-launch-test-image`
-
-Then, from inside the launched container, run `opkg install /tmp/torsh/torsh-node_x86_64.ipk`.
+4. `make openwrt-build-package-index`
+5. `make openwrt-launch-test-image`
 
 ##### Checking Logs
 
-Check the logs by running `logread` from within the container.
+Check Tor and TorSH logs by running `logread` from any OpenWrt instance, virtual or physical.
 
 
 ## Utilities

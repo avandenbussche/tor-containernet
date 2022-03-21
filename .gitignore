@@ -8,3 +8,4 @@ __pycache__
 staging/build/
 staging/output/
 staging/openwrt/
+secret.key

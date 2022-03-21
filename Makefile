@@ -68,6 +68,9 @@ containernet-cleanup:
 openwrt-build-ipk:
 	TARGET_OPENWRT_SDK=$(OPENWRT_SDK) TARGET_OPENWRT_ARCH=$(OPENWRT_ARCH) ./scripts/build_ipk.sh
 
+openwrt-build-package-index:
+	TARGET_OPENWRT_SDK=$(OPENWRT_SDK) ./scripts/build_package_index.sh
+
 openwrt-launch-test-image:
 	TARGET_OPENWRT_SDK=$(OPENWRT_SDK) TARGET_OPENWRT_ARCH=$(OPENWRT_ARCH) ./scripts/launch_openwrt_test_image.sh
 

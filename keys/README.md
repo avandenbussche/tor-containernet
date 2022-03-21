@@ -1,0 +1,1 @@
+Store the OpenWrt `usign` key pair in files called `secret.key` and `public.key` in this directory. Such a key pair can be generated using `usign -G -c "TorSH signing key" -s ./keys/secret.key -p ./keys/public.key`.

@@ -13,8 +13,7 @@ echo "Extracted architecture family name $OPENWRT_ARCH_FAMILY from SDK name"
 docker run --rm -v $STAGING_DIR/openwrt/bin/:/home/build/openwrt/bin/ \
 				-v $ROOT_DIR/torsh-openwrt-pkg/:/home/build/openwrt/package/torsh/ \
 				--network="host" -it openwrtorg/sdk:$TARGET_OPENWRT_SDK /bin/bash -c "\
-														./scripts/feeds update base && \
-														make defconfig && \
-														./scripts/feeds install torsh && \
-														sudo make package/torsh/compile -j1 V=s"
-cp $STAGING_DIR/openwrt/bin/packages/$OPENWRT_ARCH_FAMILY/base/torsh_*.ipk "$OUTPUT_DIR/torsh-node_${OPENWRT_ARCH_FAMILY}.ipk"
+						./scripts/feeds update base && \
+						make defconfig && \
+						./scripts/feeds install torsh && \
+						sudo make package/torsh/compile -j1 V=s"
