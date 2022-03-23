@@ -26,13 +26,13 @@ endif
 
 
 torsh:
-	cargo build --manifest-path torsh/Cargo.toml --target-dir staging/build/ --features server
+	cargo +nightly build --manifest-path torsh/Cargo.toml --target-dir staging/build/ --features server
 
 torsh-clean:
 	cargo clean --manifest-path torsh/Cargo.toml --target-dir staging/build/
 
 torsh-cross:
-	cd torsh/ && cross build --target $(RUSTC_ARCH) --release --lib --bin torsh-node
+	cd torsh/ && cross +nightly build --target $(RUSTC_ARCH) --release --lib --bin torsh-node
 	rm -rf staging/build/$(RUSTC_ARCH)
 	mv torsh/target/$(RUSTC_ARCH) staging/build/$(RUSTC_ARCH)
 
