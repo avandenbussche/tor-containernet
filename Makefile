@@ -34,7 +34,7 @@ torsh-clean:
 torsh-cross:
 	cd torsh/ && cross +nightly build --target $(RUSTC_ARCH) --release --lib --bin torsh-node
 	rm -rf staging/build/$(RUSTC_ARCH)
-	mv torsh/target/$(RUSTC_ARCH) staging/build/$(RUSTC_ARCH)
+	cp -r torsh/target/$(RUSTC_ARCH) staging/build/$(RUSTC_ARCH)
 
 torsh-cross-clean:
 	find ./staging/build -mindepth 1 ! -regex '^./staging/build/debug\(/.*\)?' -delete
@@ -75,7 +75,7 @@ openwrt-launch-test-image:
 	TARGET_OPENWRT_SDK=$(OPENWRT_SDK) TARGET_OPENWRT_ARCH=$(OPENWRT_ARCH) ./scripts/launch_openwrt_test_image.sh
 
 openwrt-launch-dummy-server: torsh
-	ROCKET_ADDRESS="0.0.0.0" ROCKET_LIMITS={string="512 MiB"} ./staging/build/debug/torsh-server \
+	ROCKET_ADDRESS="0.0.0.0" ROCKET_PORT=80 ROCKET_LIMITS={string="512 MiB"} ./staging/build/debug/torsh-server \
 					--authlist-file torsh/tests/sample_authlist_db.json \
 					--whitelist-file torsh/tests/sample_whitelist_db.json \
 					--release-bin-dir staging/output/
