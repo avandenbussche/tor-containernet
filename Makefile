@@ -76,7 +76,6 @@ openwrt-launch-test-image:
 
 openwrt-launch-dummy-server: torsh
 	ROCKET_ADDRESS="0.0.0.0" ROCKET_PORT=80 ROCKET_LIMITS={string="512 MiB"} ./staging/build/debug/torsh-server \
-					--authlist-file torsh/tests/sample_authlist_db.json \
 					--whitelist-file torsh/tests/sample_whitelist_db.json \
 					--release-bin-dir staging/output/
 
